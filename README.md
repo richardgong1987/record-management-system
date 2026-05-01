@@ -28,8 +28,8 @@ This README is an index. The documents below live under [docs/](docs/).
 
 - [Joining the project](docs/contributing/joining-the-project.md) — how a new classmate is added to the GitHub repository and Kanban board.
 - [Git commit conventions](docs/contributing/commit-conventions.md) — commit message format the team follows for every commit.
+- [Developer task workflow](docs/contributing/developer-workflow.md) — picking up an Issue, branching, opening a PR, requesting review, and moving Kanban cards.
 - _Planned:_ Coding standards
-- _Planned:_ Branching & merge-request workflow
 
 ### Design
 
