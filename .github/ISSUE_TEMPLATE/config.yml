@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: General Question
+    url: https://github.com/richardgong1987/record-management-system/discussions
+    about: Please ask questions here instead of creating an issue
