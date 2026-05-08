@@ -19,9 +19,12 @@ extend-exclude = '''
 # Make pylint aware of src/ so absolute imports like `from gui.main_window …` resolve.
 init-hook = "import sys; sys.path.insert(0, 'src')"
 ignore = ["__pycache__", "build", "dist", ".venv"]
-# PySide6 ships C-extension modules whose names pylint cannot introspect statically.
-# Without this, every `from PySide6.QtWidgets import QWidget` reports E0611.
-extension-pkg-allow-list = ["PySide6"]
+
+[tool.pylint.typecheck]
+# PySide6 is a C-extension binding. Importing it requires system Qt libs that the
+# CI runner does not have, which would trip E0401/E0611. Skip introspection of
+# PySide6 entirely; we don't need pylint to type-check Qt API calls.
+ignored-modules = ["PySide6", "PySide6.*"]
 
 [tool.pylint.format]
 max-line-length = 88
