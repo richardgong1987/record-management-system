@@ -1,1 +1,4 @@
 jsonlines
+PySide6==6.11.0
+black==25.1.0
+pylint==3.3.7
