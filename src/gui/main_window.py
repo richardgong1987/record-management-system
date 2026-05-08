@@ -16,9 +16,25 @@ from gui.tab.view import TabView
 
 DATA_FILE_PATH = "src/record/record.jsonl"
 
-CLIENT_COLUMNS = ["ID", "Name", "Phone Number", "City"]
-AIRLINE_COLUMNS = ["ID", "Company Name"]
-FLIGHT_COLUMNS = ["Client_ID", "Airline_ID", "Date", "Start City", "End City"]
+# Per record type: (form view class, form controller class, table columns).
+# Add a new key to introduce a new tab — the rest is wired automatically.
+_RECORD_TYPES = {
+    "Client": (
+        ClientFormView,
+        ClientFormController,
+        ["ID", "Name", "Phone Number", "City"],
+    ),
+    "Airline": (
+        AirlineFormView,
+        AirlineFormController,
+        ["ID", "Company Name"],
+    ),
+    "Flight": (
+        FlightFormView,
+        FlightFormController,
+        ["Client_ID", "Airline_ID", "Date", "Start City", "End City"],
+    ),
+}
 
 
 @dataclass
@@ -41,11 +57,7 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(1000, 600)
 
         # Step 1: Build tabs
-        self._tabs: list[_Tab] = [
-            self._build_client_tab(),
-            self._build_airline_tab(),
-            self._build_flight_tab(),
-        ]
+        self._tabs: list[_Tab] = [self._build_tab(rt) for rt in _RECORD_TYPES]
 
         # Step 2: Compose central QTabWidget
         self.setCentralWidget(self._compose_central())
@@ -59,30 +71,15 @@ class MainWindow(QMainWindow):
         for tab in self._tabs:
             self._connect_tab_signals(tab.controller)
 
-    def _build_client_tab(self) -> _Tab:
-        form = ClientFormView()
-        form_ctrl = ClientFormController(form)
-        return self._build_tab("Client Records", "Client", form, form_ctrl, CLIENT_COLUMNS)
-
-    def _build_airline_tab(self) -> _Tab:
-        form = AirlineFormView()
-        form_ctrl = AirlineFormController(form)
-        return self._build_tab("Airline Records", "Airline", form, form_ctrl, AIRLINE_COLUMNS)
-
-    def _build_flight_tab(self) -> _Tab:
-        form = FlightFormView()
-        form_ctrl = FlightFormController(form)
-        return self._build_tab("Flight Records", "Flight", form, form_ctrl, FLIGHT_COLUMNS)
-
-    def _build_tab(self, label, record_type, form, form_ctrl, columns) -> _Tab:
+    def _build_tab(self, record_type: str) -> _Tab:
+        form_cls, ctrl_cls, columns = _RECORD_TYPES[record_type]
+        form = form_cls()
+        form_ctrl = ctrl_cls(form)
         record_list = RecordListView(columns)
         list_ctrl = RecordListController(record_list)
         view = TabView(form, record_list)
         controller = TabController(form_ctrl, list_ctrl, record_type)
-        # Keep references so the controllers aren't garbage collected.
-        view._form_ctrl = form_ctrl
-        view._list_ctrl = list_ctrl
-        return _Tab(label=label, view=view, controller=controller)
+        return _Tab(label=f"{record_type} Records", view=view, controller=controller)
 
     def _compose_central(self) -> QWidget:
         tabs = QTabWidget()

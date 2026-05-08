@@ -45,7 +45,12 @@ class ClientFormView(QWidget):
         self.clear_btn = QPushButton("Clear")
 
         row = QHBoxLayout()
-        for button in (self.create_btn, self.update_btn, self.delete_btn, self.clear_btn):
+        for button in (
+            self.create_btn,
+            self.update_btn,
+            self.delete_btn,
+            self.clear_btn,
+        ):
             row.addWidget(button)
         row.addStretch()
         return row

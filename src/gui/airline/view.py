@@ -39,13 +39,20 @@ class AirlineFormView(QWidget):
         self.clear_btn = QPushButton("Clear")
 
         row = QHBoxLayout()
-        for button in (self.create_btn, self.update_btn, self.delete_btn, self.clear_btn):
+        for button in (
+            self.create_btn,
+            self.update_btn,
+            self.delete_btn,
+            self.clear_btn,
+        ):
             row.addWidget(button)
         row.addStretch()
         return row
 
     def read_payload(self) -> dict[str, str]:
-        return {field: widget.text().strip() for field, widget in self.form_inputs.items()}
+        return {
+            field: widget.text().strip() for field, widget in self.form_inputs.items()
+        }
 
     def clear(self) -> None:
         for widget in self.form_inputs.values():
