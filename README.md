@@ -41,7 +41,6 @@ This README is an index. The documents below live under [docs/](docs/).
 - [Git commit conventions](docs/contributing/commit-conventions.md) — commit message format the team follows for every commit.
 - [GUI walkthrough](docs/contributing/gui-walkthrough.md) — a tour through `src/gui/` for anyone picking up the code: what each folder does, how a click flows through the app, and where to look when you want to change something.
 - _Planned:_ Coding standards
-- _Planned:_ Branching & merge-request workflow
 
 ### Design
 

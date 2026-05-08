@@ -1,120 +1,117 @@
 # Git Commit Message Conventions
 
-The team follows the **European Commission Component Library** Git commit conventions: <https://ec.europa.eu/component-library/v1.15.0/eu/docs/conventions/git/>.
+The team follows the **PyInstaller** project's commit message conventions: <https://pyinstaller.org/en/stable/development/commit-messages.html>.
 
-The CSCK541 brief asks every group to follow a documented commit-message standard. We adopted this one — please write every commit on this project according to the rules below. Consistent commit history makes the work easy to scan during peer assessment and grading.
+The CSCK541 brief asks every group to follow a documented commit-message standard. We adopted PyInstaller's because we already pin PyInstaller for packaging, the convention is well-defined, and a consistent commit history makes the work easy to scan during peer assessment and grading.
+
+> Please write **every** commit on this project according to the rules below.
 
 ## Format
 
 ```
-<type>(<scope>): <subject>
+<subsystem>: <Subject>.
 
-<body>
+<body — optional, wrapped at 72 characters>
 
-<footer>
+<footer — optional>
 ```
 
-- The **header** (`<type>(<scope>): <subject>`) is mandatory.
+- The **header** (`<subsystem>: <Subject>.`) is mandatory.
 - The **body** and **footer** are optional, each separated from the previous section by a blank line.
-- Wrap every line at **100 characters** maximum.
 
 ## Subject line
 
-- Use the **imperative, present tense** — "add" not "added", "fix" not "fixed".
-- **Do not capitalise** the first letter.
-- **Do not end with a period.**
-- Keep it short and descriptive.
+- Aim for **≤ 50 characters**, hard limit **72 characters**.
+- Use **present tense** — "Add" not "Added", "Fix" not "Fixed".
+- **Capitalise** the first word after the colon (e.g. `gui: Add client form.`).
+- **End with a period.**
+- Prefix with a subsystem identifier (see next section), followed by `: ` (colon + space).
 
-A useful test: read it as *"If applied, this commit will __\<subject\>__."*
+A useful test: read the description as *"This commit will __\<subject\>__."*
 
-## Type
+## Subsystem prefixes
 
-Use exactly one of:
+Use one of the following — they correspond to areas of the project:
 
-| Type | Use for |
+| Prefix | Use for |
 | --- | --- |
-| `feat` | A new feature. |
-| `fix` | A bug fix. |
-| `docs` | Documentation only changes. |
-| `style` | Non-semantic code changes (whitespace, formatting). |
-| `refactor` | Code restructuring with no new feature and no bug fix. |
-| `perf` | A change that improves performance. |
-| `test` | Adding missing tests. |
-| `chore` | Build process, tooling, or dependency changes. |
+| `gui` | Code under [src/gui/](../../src/gui/) |
+| `data` | Code under [src/data/](../../src/data/) |
+| `record` | Record store / serialisation in [src/record/](../../src/record/) |
+| `conf` | Configuration in [src/conf/](../../src/conf/) |
+| `tests` | When the change is exclusively in [tests/](../../tests/) |
+| `docs` | Documentation under [docs/](../../docs/) or `README.md` |
+| `build` | Packaging, PyInstaller, `requirements.txt`, `pyproject.toml` |
+| `meta` | Repo housekeeping — `.gitignore`, GitHub workflows, issue templates |
 
-## Scope
-
-Optional. Identifies the area of the project the change touches. For this project, prefer one of:
-
-- `gui` — code under [src/gui/](../../src/gui/)
-- `data` — code under [src/data/](../../src/data/)
-- `record` — record store / serialisation in [src/record/](../../src/record/)
-- `conf` — configuration in [src/conf/](../../src/conf/)
-- `tests` — when the change is exclusively in [tests/](../../tests/)
-- `docs` — when paired with `type: docs` to indicate which document area changed
-- `build` — packaging, PyInstaller, requirements
-
-If a commit spans several areas, omit the scope.
+If a single commit genuinely spans several subsystems, pick the dominant one and explain the cross-cutting nature in the body.
 
 ## Body (optional)
 
-- Use **imperative, present tense** (same as the subject).
+- Separate from the subject by a **blank line**.
+- Wrap each line at **72 characters** (do not exceed 80).
+- Use **present tense** (same as the subject).
 - Explain the **motivation** for the change and **contrast with previous behaviour** — the body answers *why*, not *what* (the diff already shows what).
+- For bug fixes, reference the Issue or Kanban card (e.g. `Closes #14`).
+- Bullet points are fine — use `-` or `*` with hanging indents.
+- Do **not** start a body line with `#` (Git treats it as a comment).
 
 ## Footer (optional)
 
-Use the footer for two things:
+Use the footer to:
 
-1. **Breaking changes** — start a line with `BREAKING CHANGE:` followed by a space, then a description of what breaks.
-2. **Issue / Kanban references** — reference the Kanban card or GitHub issue this commit closes, e.g. `Closes #12`.
+- Reference closed Issues, e.g. `Closes #12`.
+- Note significant side effects, dependency bumps, or behaviour changes that future readers should not miss.
 
-## Reverts
+## General rules
 
-When reverting a previous commit, format the message as:
-
-```
-revert: <header of the commit being reverted>
-
-This reverts commit <hash>.
-```
-
-Where `<hash>` is the SHA of the commit being reverted.
+- **One commit, one logical unit.** Do not bundle unrelated changes into one commit.
+- **Do not mix reformatting with functional changes** — submit pure-style and functional changes as separate commits.
+- **No extraneous edits** — avoid unrelated whitespace fixes or typo corrections in files you weren't otherwise touching.
+- Follow **PEP 8** for any code changes referenced in the commit.
+- Use `git rebase -i` to tidy up your local commits before opening a Pull Request — small, focused commits are much easier to review.
 
 ## Examples
 
 ### Good
 
 ```
-feat(gui): add client record creation form
+gui: Add client record creation form.
 ```
 
 ```
-fix(data): preserve newlines when loading records on windows
+data: Preserve newlines when loading records on Windows.
 
 The jsonlines reader was stripping CR characters because the file was
-opened in text mode. Open with newline='' so on-disk content round-trips
-intact across platforms.
+opened in text mode. Open with newline='' so on-disk content
+round-trips intact across platforms.
 
 Closes #14
 ```
 
 ```
-docs(contributing): add commit message conventions
+docs: Add commit message conventions.
 ```
 
 ```
-refactor(record): split jsonl reader and writer into separate modules
+record: Split jsonl reader and writer into separate modules.
 ```
 
 ```
-chore(build): pin pyinstaller to 6.6.0
+build: Pin pyinstaller to 6.6.0.
+```
+
+```
+tests: Add unit tests for client record validation.
 ```
 
 ### Avoid
 
 | Bad | Why |
 | --- | --- |
-| `Fixed bug` | No type, past tense, capitalised, says nothing about what was fixed. |
-| `feat(GUI): Added new form.` | Capitalised subject, past tense, trailing period. |
-| `update stuff` | No type, vague subject. |
-| `fix(data): fixed the thing where loading was broken on windows because the jsonl reader was opened in text mode and stripped carriage returns` | Subject too long — push the detail into the body. |
+| `Fixed bug` | No subsystem prefix, past tense, no period, says nothing about what was fixed. |
+| `gui: added new form.` | Lower-case first word after the colon, past tense. |
+| `gui: Add new form` | Missing trailing period. |
+| `update stuff` | No prefix, no period, vague subject. |
+| `gui: Implement the entire client record management form including all validation and persistence work.` | Subject far too long — push detail into the body. |
+| `gui: Add form and fix unrelated typo in README.` | Mixes two unrelated changes — split into two commits. |
