@@ -30,8 +30,10 @@ class RecordListController(QObject):
 
     def _on_prev(self) -> None:
         target = max(1, self._current_page - 1)
+        self._current_page = target
         self.page_changed.emit(target)
 
     def _on_next(self) -> None:
         target = self._current_page + 1
+        self._current_page = target
         self.page_changed.emit(target)
