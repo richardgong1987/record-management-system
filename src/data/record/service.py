@@ -1,25 +1,13 @@
 """Record creation service.
 
-Composes parsing, projection, and validation into a single
-``create_record`` use-case. No I/O — that lives in ``repository``.
-
-NOTE: the GUI ``*_TEXT_FIELDS`` imports below are a layering inversion
-(data depends on GUI). They are kept for step 1 of the refactor only;
-step 2 will move the field schemas onto the data side and flip the arrow.
+Composes payload projection, required-field validation, and integer
+coercion into a single ``create_record`` use-case. No I/O — that lives
+in ``repository``. No GUI imports — the canonical field schemas live
+in ``schema``.
 """
 
+from data.record.schema import ALLOWED_FIELDS, INTEGER_FIELDS
 from data.record.validator import RecordValidationError, check_required
-from gui.airline.types import AIRLINE_TEXT_FIELDS
-from gui.client.types import CLIENT_TEXT_FIELDS
-from gui.flight.types import FLIGHT_TEXT_FIELDS
-
-INTEGER_FIELDS = ("ID", "Client_ID", "Airline_ID")
-
-ALLOWED_FIELDS = {
-    "Client": CLIENT_TEXT_FIELDS,
-    "Airline": AIRLINE_TEXT_FIELDS,
-    "Flight": FLIGHT_TEXT_FIELDS,
-}
 
 
 def create_record(record_type: str, payload: dict) -> dict:

@@ -3,8 +3,9 @@ from pathlib import Path
 
 from PySide6.QtWidgets import QMainWindow, QTabWidget, QWidget
 
-from data.records import (
+from data.record import (
     RecordValidationError,
+    check_unique_id,
     create_record,
     load_records,
     save_records,
@@ -115,6 +116,7 @@ class MainWindow(QMainWindow):
     def _on_create(self, record_type: str, payload: dict) -> None:
         try:
             record = create_record(record_type, payload)
+            check_unique_id(record, self._records)
         except RecordValidationError as exc:
             self.status.set_status(str(exc))
             return
