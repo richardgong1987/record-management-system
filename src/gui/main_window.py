@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 from PySide6.QtWidgets import QMainWindow, QTabWidget, QWidget
 
@@ -20,7 +21,8 @@ from gui.status_bar.view import StatusBarView
 from gui.tab.controller import TabController
 from gui.tab.view import TabView
 
-DATA_FILE_PATH = "src/record/record.jsonl"
+APP_ROOT = Path(__file__).resolve().parents[1]
+DATA_FILE_PATH = APP_ROOT / "record" / "record.jsonl"
 
 # Per record type: (form view class, form controller class, table columns).
 # Add a new key to introduce a new tab — the rest is wired automatically.
@@ -45,6 +47,7 @@ _RECORD_TYPES = {
 
 @dataclass
 class _Tab:
+    record_type: str
     label: str
     view: TabView
     controller: TabController
@@ -78,7 +81,7 @@ class MainWindow(QMainWindow):
         for tab in self._tabs:
             self._connect_tab_signals(tab.controller)
 
-            self._refresh_all_tables()
+        self._refresh_all_tables()
 
     def _build_tab(self, record_type: str) -> _Tab:
         form_cls, ctrl_cls, columns = _RECORD_TYPES[record_type]
@@ -88,7 +91,12 @@ class MainWindow(QMainWindow):
         list_ctrl = RecordListController(record_list)
         view = TabView(form, record_list)
         controller = TabController(form_ctrl, list_ctrl, record_type)
-        return _Tab(label=f"{record_type} Records", view=view, controller=controller)
+        return _Tab(
+            record_type=record_type,
+            label=f"{record_type} Records",
+            view=view,
+            controller=controller,
+        )
 
     def _compose_central(self) -> QWidget:
         tabs = QTabWidget()
@@ -139,5 +147,5 @@ class MainWindow(QMainWindow):
         for record_type in _RECORD_TYPES:
             rows = self._records_for_type(record_type)
             for tab in self._tabs:
-                if tab.label == f"{record_type} Records":
+                if tab.record_type == record_type:
                     tab.view.record_list.set_rows(rows)

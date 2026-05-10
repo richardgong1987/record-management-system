@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PySide6.QtWidgets import QLabel, QStatusBar
 
 
@@ -12,5 +14,5 @@ class StatusBarView(QStatusBar):
     def set_status(self, message: str) -> None:
         self._status_lbl.setText(f"Status: {message}")
 
-    def set_data_file(self, path: str) -> None:
+    def set_data_file(self, path: Path) -> None:
         self._data_file_lbl.setText(f"Data file: {path}")

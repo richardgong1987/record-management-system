@@ -1,8 +1,8 @@
-"""Backward-compat shim — prefer ``data.record`` for new imports.
+"""Record feature: validator, service, repository.
 
-This module forwards the previous public surface to the split package
-``data.record`` so existing callers (e.g. ``gui.main_window``) keep working
-during the refactor. Remove once all callers have been migrated.
+Public surface re-exported for convenient imports:
+
+    from data.record import create_record, save_records, load_records
 """
 
 from data.record.repository import load_records, save_records
