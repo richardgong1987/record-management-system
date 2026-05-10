@@ -1,0 +1,51 @@
+# Tooling configuration for the project.
+# - black formats Python source.
+# - pylint enforces our coding-standard limits (300-line files, 30-line functions,
+#   ≤ 3 parameters, ≤ 3 levels of nesting). See CLAUDE.md §1 for the full list.
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+extend-exclude = '''
+/(
+  \.venv
+  | __pycache__
+  | build
+  | dist
+)/
+'''
+
+[tool.pylint.main]
+# Make pylint aware of src/ so absolute imports like `from gui.main_window …` resolve.
+init-hook = "import sys; sys.path.insert(0, 'src')"
+ignore = ["__pycache__", "build", "dist", ".venv"]
+
+[tool.pylint.typecheck]
+# PySide6 is a C-extension binding. Importing it requires system Qt libs that the
+# CI runner does not have, which would trip E0401/E0611. Skip introspection of
+# PySide6 entirely; we don't need pylint to type-check Qt API calls.
+ignored-modules = ["PySide6", "PySide6.*"]
+
+[tool.pylint.format]
+max-line-length = 88
+max-module-lines = 300                # CLAUDE.md §1: file length ≤ 300 lines
+
+[tool.pylint.design]
+max-args = 4                          # 3 user args + implicit `self` (CLAUDE.md §1: parameters ≤ 3)
+max-positional-arguments = 4          # same reason as max-args
+max-statements = 30                   # CLAUDE.md §1: function length ≤ 30 lines (proxy)
+max-nested-blocks = 3                 # CLAUDE.md §1: nesting depth ≤ 3 levels
+max-locals = 15
+max-branches = 12
+max-attributes = 10                   # widget container classes legitimately hold many child widgets
+
+[tool.pylint."messages control"]
+# Per CLAUDE.md §7.4: comments explain why, not what — and we don't require docstrings
+# on every module/class/function. The remaining warnings still catch genuine smells.
+disable = [
+    "missing-module-docstring",
+    "missing-class-docstring",
+    "missing-function-docstring",
+    "too-few-public-methods",          # noisy on view/controller classes that wrap one widget
+    "duplicate-code",                  # the per-record-type forms are deliberately parallel
+]
