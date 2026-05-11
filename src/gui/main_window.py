@@ -41,11 +41,7 @@ _RECORD_TYPES = {
         AirlineFormController,
         AIRLINE_TEXT_FIELDS,
     ),
-    "Flight": (
-        FlightFormView,
-        FlightFormController,
-        FLIGHT_TEXT_FIELDS
-    ),
+    "Flight": (FlightFormView, FlightFormController, FLIGHT_TEXT_FIELDS),
 }
 
 
