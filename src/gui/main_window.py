@@ -11,10 +11,13 @@ from data.record import (
     save_records,
 )
 from gui.airline.controller import AirlineFormController
+from gui.airline.types import AIRLINE_TEXT_FIELDS
 from gui.airline.view import AirlineFormView
 from gui.client.controller import ClientFormController
+from gui.client.types import CLIENT_TEXT_FIELDS
 from gui.client.view import ClientFormView
 from gui.flight.controller import FlightFormController
+from gui.flight.types import FLIGHT_TEXT_FIELDS
 from gui.flight.view import FlightFormView
 from gui.record_list.controller import RecordListController
 from gui.record_list.view import RecordListView
@@ -31,17 +34,17 @@ _RECORD_TYPES = {
     "Client": (
         ClientFormView,
         ClientFormController,
-        ["ID", "Name", "Phone Number", "City"],
+        CLIENT_TEXT_FIELDS,
     ),
     "Airline": (
         AirlineFormView,
         AirlineFormController,
-        ["ID", "Company Name"],
+        AIRLINE_TEXT_FIELDS,
     ),
     "Flight": (
         FlightFormView,
         FlightFormController,
-        ["Client_ID", "Airline_ID", "Date", "Start City", "End City"],
+        FLIGHT_TEXT_FIELDS
     ),
 }
 
@@ -63,7 +66,7 @@ class MainWindow(QMainWindow):
         # 4. Wire each tab controller's signals to status-bar feedback
         super().__init__()
         self.setWindowTitle("Record Management System")
-        self.resize(1200, 700)
+        self.resize(1400, 700)
         self.setMinimumSize(1000, 600)
         self._records = load_records(DATA_FILE_PATH)
 
