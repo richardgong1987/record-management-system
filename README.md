@@ -44,8 +44,12 @@ This README is an index. The documents below live under [docs/](docs/).
 
 ### Design
 
+- [GUI layout](docs/design/gui-layout.md) — formal design for the application shell: tabs, forms, record list, status bar, signal flow.
+- [Create record](docs/design/create-record.md) — design and tour for the create-record flow: form click → validation → atomic JSONL write.
+- _Planned:_ Update record
+- _Planned:_ Delete record
+- _Planned:_ Search & display records
 - _Planned:_ Architecture overview
-- _Planned:_ Business / domain design
 - _Planned:_ Directory structure explainer
 
 ### Report
