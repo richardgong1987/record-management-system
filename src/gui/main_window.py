@@ -1,12 +1,23 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 from PySide6.QtWidgets import QMainWindow, QTabWidget, QWidget
 
+from data.record import (
+    RecordValidationError,
+    check_unique_id,
+    create_record,
+    load_records,
+    save_records,
+)
 from gui.airline.controller import AirlineFormController
+from gui.airline.types import AIRLINE_TEXT_FIELDS
 from gui.airline.view import AirlineFormView
 from gui.client.controller import ClientFormController
+from gui.client.types import CLIENT_TEXT_FIELDS
 from gui.client.view import ClientFormView
 from gui.flight.controller import FlightFormController
+from gui.flight.types import FLIGHT_TEXT_FIELDS
 from gui.flight.view import FlightFormView
 from gui.record_list.controller import RecordListController
 from gui.record_list.view import RecordListView
@@ -14,7 +25,8 @@ from gui.status_bar.view import StatusBarView
 from gui.tab.controller import TabController
 from gui.tab.view import TabView
 
-DATA_FILE_PATH = "src/record/record.jsonl"
+APP_ROOT = Path(__file__).resolve().parents[1]
+DATA_FILE_PATH = APP_ROOT / "record" / "record.jsonl"
 
 # Per record type: (form view class, form controller class, table columns).
 # Add a new key to introduce a new tab — the rest is wired automatically.
@@ -22,23 +34,20 @@ _RECORD_TYPES = {
     "Client": (
         ClientFormView,
         ClientFormController,
-        ["ID", "Name", "Phone Number", "City"],
+        CLIENT_TEXT_FIELDS,
     ),
     "Airline": (
         AirlineFormView,
         AirlineFormController,
-        ["ID", "Company Name"],
+        AIRLINE_TEXT_FIELDS,
     ),
-    "Flight": (
-        FlightFormView,
-        FlightFormController,
-        ["Client_ID", "Airline_ID", "Date", "Start City", "End City"],
-    ),
+    "Flight": (FlightFormView, FlightFormController, FLIGHT_TEXT_FIELDS),
 }
 
 
 @dataclass
 class _Tab:
+    record_type: str
     label: str
     view: TabView
     controller: TabController
@@ -53,8 +62,9 @@ class MainWindow(QMainWindow):
         # 4. Wire each tab controller's signals to status-bar feedback
         super().__init__()
         self.setWindowTitle("Record Management System")
-        self.resize(1200, 700)
+        self.resize(1400, 700)
         self.setMinimumSize(1000, 600)
+        self._records = load_records(DATA_FILE_PATH)
 
         # Step 1: Build tabs
         self._tabs: list[_Tab] = [self._build_tab(rt) for rt in _RECORD_TYPES]
@@ -71,6 +81,8 @@ class MainWindow(QMainWindow):
         for tab in self._tabs:
             self._connect_tab_signals(tab.controller)
 
+        self._refresh_all_tables()
+
     def _build_tab(self, record_type: str) -> _Tab:
         form_cls, ctrl_cls, columns = _RECORD_TYPES[record_type]
         form = form_cls()
@@ -79,7 +91,12 @@ class MainWindow(QMainWindow):
         list_ctrl = RecordListController(record_list)
         view = TabView(form, record_list)
         controller = TabController(form_ctrl, list_ctrl, record_type)
-        return _Tab(label=f"{record_type} Records", view=view, controller=controller)
+        return _Tab(
+            record_type=record_type,
+            label=f"{record_type} Records",
+            view=view,
+            controller=controller,
+        )
 
     def _compose_central(self) -> QWidget:
         tabs = QTabWidget()
@@ -96,7 +113,18 @@ class MainWindow(QMainWindow):
         ctrl.page_changed.connect(self._on_page_changed)
 
     def _on_create(self, record_type: str, payload: dict) -> None:
-        self.status.set_status(f"Create {record_type}: {payload}")
+        try:
+            record = create_record(record_type, payload)
+            check_unique_id(record, self._records)
+        except RecordValidationError as exc:
+            self.status.set_status(str(exc))
+            return
+
+        self._records.append(record)
+        save_records(DATA_FILE_PATH, self._records)
+        self._refresh_all_tables()
+
+        self.status.set_status(f"Create {record_type}: {record}")
 
     def _on_update(self, record_type: str, payload: dict) -> None:
         self.status.set_status(f"Update {record_type}: {payload}")
@@ -112,3 +140,13 @@ class MainWindow(QMainWindow):
 
     def _on_page_changed(self, record_type: str, page: int) -> None:
         self.status.set_status(f"{record_type} → page {page}")
+
+    def _records_for_type(self, record_type: str) -> list[dict]:
+        return [record for record in self._records if record["Type"] == record_type]
+
+    def _refresh_all_tables(self) -> None:
+        for record_type in _RECORD_TYPES:
+            rows = self._records_for_type(record_type)
+            for tab in self._tabs:
+                if tab.record_type == record_type:
+                    tab.view.record_list.set_rows(rows)
