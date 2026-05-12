@@ -20,6 +20,7 @@ from gui.flight.controller import FlightFormController
 from gui.flight.types import FLIGHT_TEXT_FIELDS
 from gui.flight.view import FlightFormView
 from gui.record_list.controller import RecordListController
+from gui.record_list.pagination import paginate
 from gui.record_list.view import RecordListView
 from gui.status_bar.view import StatusBarView
 from gui.tab.controller import TabController
@@ -65,6 +66,7 @@ class MainWindow(QMainWindow):
         self.resize(1400, 700)
         self.setMinimumSize(1000, 600)
         self._records = load_records(DATA_FILE_PATH)
+        self._page_by_type: dict[str, int] = {rt: 1 for rt in _RECORD_TYPES}
 
         # Step 1: Build tabs
         self._tabs: list[_Tab] = [self._build_tab(rt) for rt in _RECORD_TYPES]
@@ -139,14 +141,24 @@ class MainWindow(QMainWindow):
         self.status.set_status(f"Show all {record_type}")
 
     def _on_page_changed(self, record_type: str, page: int) -> None:
-        self.status.set_status(f"{record_type} → page {page}")
+        self._page_by_type[record_type] = page
+        for tab in self._tabs:
+            if tab.record_type == record_type:
+                self._refresh_tab(tab)
+                return
 
     def _records_for_type(self, record_type: str) -> list[dict]:
         return [record for record in self._records if record["Type"] == record_type]
 
     def _refresh_all_tables(self) -> None:
-        for record_type in _RECORD_TYPES:
-            rows = self._records_for_type(record_type)
-            for tab in self._tabs:
-                if tab.record_type == record_type:
-                    tab.view.record_list.set_rows(rows)
+        for tab in self._tabs:
+            self._refresh_tab(tab)
+
+    def _refresh_tab(self, tab: _Tab) -> None:
+        rows = self._records_for_type(tab.record_type)
+        requested = self._page_by_type[tab.record_type]
+        page = paginate(rows, requested)
+        self._page_by_type[tab.record_type] = page.current_page
+        tab.view.record_list.set_rows(page.rows)
+        tab.view.record_list.set_page_label(page.current_page, page.total_pages)
+        tab.controller.set_current_page(page.current_page)

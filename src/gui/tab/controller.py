@@ -42,3 +42,6 @@ class TabController(QObject):
             lambda: self.show_all_requested.emit(rt)
         )
         self._list_ctrl.page_changed.connect(lambda p: self.page_changed.emit(rt, p))
+
+    def set_current_page(self, page: int) -> None:
+        self._list_ctrl.set_current_page(page)
