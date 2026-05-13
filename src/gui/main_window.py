@@ -125,9 +125,16 @@ class MainWindow(QMainWindow):
             return
 
         self._records.append(record)
-        save_records(DATA_FILE_PATH, self._records)
-        self._refresh_all_tables()
+        try:
+            save_records(DATA_FILE_PATH, self._records)
+        except OSError as exc:
+            # Roll back the in-memory append so _records stays consistent
+            # with the on-disk file when persistence fails.
+            self._records.pop()
+            self.status.set_status(f"Save failed: {exc}")
+            return
 
+        self._refresh_all_tables()
         self.status.set_status(f"Create {record_type}: {record}")
 
     def _on_update(self, record_type: str, payload: dict) -> None:
