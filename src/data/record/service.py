@@ -15,8 +15,8 @@ def create_record(record_type: str, payload: dict) -> dict:
         raise RecordValidationError(f"Unknown record type: {record_type}.")
 
     record = _project_payload(record_type, payload)
-    check_required(record_type, record)
     _coerce_integers(record)
+    check_required(record_type, record)
     return record
 
 
@@ -31,7 +31,12 @@ def _coerce_integers(record: dict) -> None:
     for field in INTEGER_FIELDS:
         if field not in record:
             continue
+        value = record[field]
+        # Skip empty values — check_required runs next and raises a clearer
+        # "<field> is required" error; non-required empty fields stay as "".
+        if value in (None, ""):
+            continue
         try:
-            record[field] = int(record[field])
+            record[field] = int(value)
         except (TypeError, ValueError) as exc:
             raise RecordValidationError(f"{field} must be a whole number.") from exc
