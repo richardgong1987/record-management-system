@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-DEFAULT_PAGE_SIZE = 10
+DEFAULT_PAGE_SIZE = 15
 
 
 @dataclass(frozen=True)
