@@ -4,6 +4,8 @@ Pure functions — no I/O, no GUI, no global mutable state.
 Validators raise ``RecordValidationError`` on failure and return ``None`` on success.
 """
 
+from datetime import datetime
+
 REQUIRED_FIELDS = {
     "Client": ("ID", "Name", "Address Line 1", "City", "Country", "Phone Number"),
     "Airline": ("ID", "Company Name"),
@@ -23,6 +25,24 @@ def check_required(record_type: str, record: dict) -> None:
     for field in REQUIRED_FIELDS.get(record_type, ()):
         if record.get(field) in _EMPTY_VALUES:
             raise RecordValidationError(f"{field} is required.")
+
+
+def check_positive_integers(record: dict) -> None:
+    for field in ("ID", "Client_ID", "Airline_ID"):
+        if field in record and record[field] <= 0:
+            raise RecordValidationError(f"{field} must be greater than zero.")
+
+
+def check_flight_date(record: dict) -> None:
+    if record.get("Type") != "Flight":
+        return
+
+    try:
+        datetime.fromisoformat(record["Date"])
+    except ValueError as exc:
+        raise RecordValidationError(
+            "Date must use ISO format, e.g. 2026-05-13T14:30:00."
+        ) from exc
 
 
 def check_unique_id(record: dict, existing: list[dict]) -> None:
