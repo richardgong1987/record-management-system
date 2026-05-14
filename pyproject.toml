@@ -2,6 +2,11 @@
 # - black formats Python source.
 # - pylint enforces our coding-standard limits (300-line files, 30-line functions,
 #   ≤ 3 parameters, ≤ 3 levels of nesting). See CLAUDE.md §1 for the full list.
+# - pytest discovers tests under tests/ with src/ on the import path.
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
 
 [tool.black]
 line-length = 88

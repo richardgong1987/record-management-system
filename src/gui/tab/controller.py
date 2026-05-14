@@ -9,7 +9,8 @@ class TabController(QObject):
     delete_requested = Signal(str, dict)
     search_requested = Signal(str, str)
     show_all_requested = Signal(str)
-    page_changed = Signal(str, int)
+    prev_requested = Signal(str)
+    next_requested = Signal(str)
 
     def __init__(
         self, form_ctrl: QObject, list_ctrl: RecordListController, record_type: str
@@ -41,4 +42,5 @@ class TabController(QObject):
         self._list_ctrl.show_all_requested.connect(
             lambda: self.show_all_requested.emit(rt)
         )
-        self._list_ctrl.page_changed.connect(lambda p: self.page_changed.emit(rt, p))
+        self._list_ctrl.prev_requested.connect(lambda: self.prev_requested.emit(rt))
+        self._list_ctrl.next_requested.connect(lambda: self.next_requested.emit(rt))

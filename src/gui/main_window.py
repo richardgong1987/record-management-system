@@ -24,6 +24,7 @@ from gui.record_list.view import RecordListView
 from gui.status_bar.view import StatusBarView
 from gui.tab.controller import TabController
 from gui.tab.view import TabView
+from shared.utils.pagination import Page, paginate
 
 APP_ROOT = Path(__file__).resolve().parents[1]
 DATA_FILE_PATH = APP_ROOT / "record" / "record.jsonl"
@@ -65,9 +66,11 @@ class MainWindow(QMainWindow):
         self.resize(1400, 700)
         self.setMinimumSize(1000, 600)
         self._records = load_records(DATA_FILE_PATH)
+        self._page_by_type: dict[str, int] = {rt: 1 for rt in _RECORD_TYPES}
 
         # Step 1: Build tabs
         self._tabs: list[_Tab] = [self._build_tab(rt) for rt in _RECORD_TYPES]
+        self._tabs_by_type: dict[str, _Tab] = {t.record_type: t for t in self._tabs}
 
         # Step 2: Compose central QTabWidget
         self.setCentralWidget(self._compose_central())
@@ -110,7 +113,8 @@ class MainWindow(QMainWindow):
         ctrl.delete_requested.connect(self._on_delete)
         ctrl.search_requested.connect(self._on_search)
         ctrl.show_all_requested.connect(self._on_show_all)
-        ctrl.page_changed.connect(self._on_page_changed)
+        ctrl.prev_requested.connect(self._on_prev_requested)
+        ctrl.next_requested.connect(self._on_next_requested)
 
     def _on_create(self, record_type: str, payload: dict) -> None:
         try:
@@ -138,15 +142,32 @@ class MainWindow(QMainWindow):
     def _on_show_all(self, record_type: str) -> None:
         self.status.set_status(f"Show all {record_type}")
 
-    def _on_page_changed(self, record_type: str, page: int) -> None:
-        self.status.set_status(f"{record_type} → page {page}")
+    def _on_prev_requested(self, record_type: str) -> None:
+        self._step_page(record_type, -1)
+
+    def _on_next_requested(self, record_type: str) -> None:
+        self._step_page(record_type, +1)
+
+    def _step_page(self, record_type: str, delta: int) -> None:
+        self._page_by_type[record_type] += delta
+        self._refresh_tab(self._tabs_by_type[record_type])
 
     def _records_for_type(self, record_type: str) -> list[dict]:
         return [record for record in self._records if record["Type"] == record_type]
 
     def _refresh_all_tables(self) -> None:
-        for record_type in _RECORD_TYPES:
-            rows = self._records_for_type(record_type)
-            for tab in self._tabs:
-                if tab.record_type == record_type:
-                    tab.view.record_list.set_rows(rows)
+        for tab in self._tabs:
+            self._refresh_tab(tab)
+
+    def _refresh_tab(self, tab: _Tab) -> None:
+        self._paint(tab, self._visible_page(tab.record_type))
+
+    def _visible_page(self, record_type: str) -> Page:
+        rows = self._records_for_type(record_type)
+        page = paginate(rows, self._page_by_type[record_type])
+        self._page_by_type[record_type] = page.current_page
+        return page
+
+    def _paint(self, tab: _Tab, page: Page) -> None:
+        tab.view.record_list.set_rows(page.rows)
+        tab.view.record_list.set_page_label(page.current_page, page.total_pages)
