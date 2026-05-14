@@ -27,6 +27,16 @@ pylint src/        # check it against our coding standards
 
 Both read their config from [`pyproject.toml`](pyproject.toml). The pylint limits there mirror the hard rules we agreed on: ≤ 300 lines per file, ≤ 30 statements per function, ≤ 3 parameters, ≤ 3 levels of nesting. Please don't push code that pylint flags — fix it, or open a discussion on the relevant issue if you think a rule should be relaxed.
 
+## Tests — run before pushing
+
+A second workflow ([`.github/workflows/test.yml`](.github/workflows/test.yml)) runs `pytest` on every push and every pull request. A failing test blocks the merge, so run the suite locally before pushing:
+
+```bash
+pytest
+```
+
+Test configuration (discovery paths and `src/` on the import path) lives in [`pyproject.toml`](pyproject.toml) under `[tool.pytest.ini_options]`. New modules need their own tests under `tests/<area>/` — the assignment brief requires unit tests for each module.
+
 ## Documentation
 
 This README is an index. The documents below live under [docs/](docs/).
