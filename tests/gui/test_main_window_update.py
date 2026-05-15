@@ -163,22 +163,40 @@ def test_update_persists_to_disk(main_window) -> None:
     assert on_disk[0]["Name"] == "Alicia"
 
 
-def test_update_works_for_airline_records(main_window) -> None:
-    main_window._on_create("Airline", _airline_payload(id_value="1", company="Acme"))
-    main_window._on_record_selected("Airline", 0)
-    main_window._on_update(
-        "Airline", _airline_payload(id_value="1", company="Acme Aviation")
-    )
-    assert main_window._records[-1]["Company Name"] == "Acme Aviation"
+@pytest.mark.parametrize(
+    "record_type,seed_payload,update_payload,expected_field,expected_value",
+    [
+        pytest.param(
+            "Airline",
+            _airline_payload(id_value="1", company="Acme"),
+            _airline_payload(id_value="1", company="Acme Aviation"),
+            "Company Name",
+            "Acme Aviation",
+            id="airline",
+        ),
+        pytest.param(
+            "Flight",
+            _flight_payload(),
+            _flight_payload(date="2026-07-04T12:00:00"),
+            "Date",
+            "2026-07-04T12:00:00",
+            id="flight-no-own-id",
+        ),
+    ],
+)
+def test_update_works_for_record_type(
+    main_window,
+    record_type: str,
+    seed_payload: dict,
+    update_payload: dict,
+    expected_field: str,
+    expected_value: str,
+) -> None:
+    main_window._on_create(record_type, seed_payload)
+    main_window._on_record_selected(record_type, 0)
+    main_window._on_update(record_type, update_payload)
 
-
-def test_update_works_for_flight_records_which_have_no_own_id(main_window) -> None:
-    main_window._on_create("Flight", _flight_payload())
-    main_window._on_record_selected("Flight", 0)
-    main_window._on_update(
-        "Flight", _flight_payload(date="2026-07-04T12:00:00")
-    )
-    assert main_window._records[-1]["Date"] == "2026-07-04T12:00:00"
+    assert main_window._records[-1][expected_field] == expected_value
 
 
 # ---------------------------------------------------------------------------
@@ -186,25 +204,40 @@ def test_update_works_for_flight_records_which_have_no_own_id(main_window) -> No
 # ---------------------------------------------------------------------------
 
 
-def test_update_with_empty_required_field_is_rejected(main_window) -> None:
+@pytest.mark.parametrize(
+    "invalid_payload",
+    [
+        pytest.param(
+            _client_payload(id_value="1", name=""),
+            id="empty-required-field",
+        ),
+        pytest.param(
+            _client_payload(id_value="abc"),
+            id="non-integer-id",
+        ),
+    ],
+)
+def test_update_with_invalid_payload_is_rejected(
+    main_window, invalid_payload: dict
+) -> None:
     _seed_client(main_window, id_value="1")
     main_window._on_record_selected("Client", 0)
 
     before = list(main_window._records)
+    main_window._on_update("Client", invalid_payload)
+
+    assert main_window._records == before
+
+
+def test_update_with_empty_name_reports_required_message(main_window) -> None:
+    # Pinned separately because we also want to assert the status-bar text,
+    # not just that records are untouched.
+    _seed_client(main_window, id_value="1")
+    main_window._on_record_selected("Client", 0)
+
     main_window._on_update("Client", _client_payload(id_value="1", name=""))
 
-    assert main_window._records == before
     assert "Name is required." in main_window.status._status_lbl.text()
-
-
-def test_update_with_non_integer_id_is_rejected(main_window) -> None:
-    _seed_client(main_window, id_value="1")
-    main_window._on_record_selected("Client", 0)
-
-    before = list(main_window._records)
-    main_window._on_update("Client", _client_payload(id_value="abc"))
-
-    assert main_window._records == before
 
 
 # ---------------------------------------------------------------------------
@@ -237,11 +270,21 @@ def test_update_rejects_collision_with_another_records_id(main_window) -> None:
 
 # ---------------------------------------------------------------------------
 # Persistence failure — never let in-memory state move ahead of disk.
+#
+# OSError and PermissionError (an OSError subclass) must both be caught
+# by the orchestrator without propagating.
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.parametrize(
+    "exc",
+    [
+        pytest.param(OSError("Disk full"), id="disk-full-oserror"),
+        pytest.param(PermissionError("read-only"), id="permission-error"),
+    ],
+)
 def test_save_failure_during_update_leaves_records_untouched(
-    main_window, monkeypatch
+    main_window, monkeypatch, exc: OSError
 ) -> None:
     from gui import main_window as mw
 
@@ -249,27 +292,12 @@ def test_save_failure_during_update_leaves_records_untouched(
     main_window._on_record_selected("Client", 0)
     before = list(main_window._records)
 
-    def raise_disk_full(*_args, **_kwargs):
-        raise OSError("Disk full")
+    def raise_exc(*_args, **_kwargs):
+        raise exc
 
-    monkeypatch.setattr(mw, "save_records", raise_disk_full)
+    monkeypatch.setattr(mw, "save_records", raise_exc)
 
     main_window._on_update("Client", _client_payload(id_value="1", name="Alicia"))
 
     assert main_window._records == before
     assert "Save failed:" in main_window.status._status_lbl.text()
-
-
-def test_permission_error_during_update_is_caught(main_window, monkeypatch) -> None:
-    from gui import main_window as mw
-
-    _seed_client(main_window, id_value="1")
-    main_window._on_record_selected("Client", 0)
-
-    monkeypatch.setattr(
-        mw,
-        "save_records",
-        lambda *a, **kw: (_ for _ in ()).throw(PermissionError("read-only")),
-    )
-    # PermissionError is an OSError subclass — must not propagate.
-    main_window._on_update("Client", _client_payload(id_value="1", name="Alicia"))

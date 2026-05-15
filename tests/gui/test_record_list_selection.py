@@ -27,59 +27,45 @@ def _client_payload(id_value: str, name: str = "Alice") -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# RecordListController: cellClicked → record_selected wiring.
-#
-# Use cellClicked (not itemSelectionChanged) so a re-click on the row index
-# that previously held a now-deleted record still fires. Verified here at
-# the controller level, decoupled from MainWindow.
-# ---------------------------------------------------------------------------
 
 
-def test_cellclicked_emits_record_selected_with_row(qapp) -> None:
+@pytest.mark.parametrize(
+    "rows,clicks,expected_emissions",
+    [
+        pytest.param(
+            [{"ID": "1", "Name": "Alice"}, {"ID": "2", "Name": "Bob"}],
+            [(1, 0)],
+            [1],
+            id="single-click-row-1",
+        ),
+        pytest.param(
+            [{"ID": "1", "Name": "Alice"}],
+            [(0, 0), (0, 0)],
+            [0, 0],
+            id="double-click-same-row",
+        ),
+    ],
+)
+def test_cellclicked_emits_record_selected_per_click(
+    qapp,
+    rows: list[dict],
+    clicks: list[tuple[int, int]],
+    expected_emissions: list[int],
+) -> None:
     from gui.record_list.controller import RecordListController
     from gui.record_list.view import RecordListView
 
     view = RecordListView(["ID", "Name"])
-    view.set_rows([{"ID": "1", "Name": "Alice"}, {"ID": "2", "Name": "Bob"}])
+    view.set_rows(rows)
     ctrl = RecordListController(view)
 
     emissions: list[int] = []
     ctrl.record_selected.connect(emissions.append)
 
-    view.table.cellClicked.emit(1, 0)
-    assert emissions == [1]
+    for row, col in clicks:
+        view.table.cellClicked.emit(row, col)
 
-
-def test_clicking_the_same_row_twice_emits_each_time(qapp) -> None:
-    """Regression: the previous implementation listened on
-    itemSelectionChanged, which Qt suppresses when the selection state
-    is unchanged. After a delete, re-clicking the now-row-0 record was
-    silently swallowed and the orchestrator never learned about it."""
-    from gui.record_list.controller import RecordListController
-    from gui.record_list.view import RecordListView
-
-    view = RecordListView(["ID", "Name"])
-    view.set_rows([{"ID": "1", "Name": "Alice"}])
-    ctrl = RecordListController(view)
-
-    emissions: list[int] = []
-    ctrl.record_selected.connect(emissions.append)
-
-    view.table.cellClicked.emit(0, 0)
-    view.table.cellClicked.emit(0, 0)
-    assert emissions == [0, 0]
-
-
-# ---------------------------------------------------------------------------
-# End-to-end regression for the user-reported bug:
-#
-#   "When I select the first one to delete, then the next one becomes the
-#    first one, then I can not delete it."
-#
-# This test routes the click through the real Qt signal so the bug would
-# reappear if cellClicked were swapped back to itemSelectionChanged.
-# ---------------------------------------------------------------------------
+    assert emissions == expected_emissions
 
 
 def test_consecutive_deletes_via_row_zero_click(qapp, monkeypatch, tmp_path) -> None:

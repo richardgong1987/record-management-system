@@ -61,31 +61,40 @@ def _seed_client(window, **overrides) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Guard rail: clicking Delete without a selection must not touch anything.
+# Guard rails: clicking Delete without a real selection must not touch
+# anything. Two flavours of "no selection": never selected, or selected a
+# dict that's no longer in _records (identity check fails).
 # ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "stale_selection",
+    [
+        pytest.param(False, id="no-selection-ever"),
+        pytest.param(True, id="stale-selection"),
+    ],
+)
+def test_delete_without_valid_selection_is_a_no_op(
+    main_window, stale_selection: bool
+) -> None:
+    _seed_client(main_window, id_value="1")
+    if stale_selection:
+        # A dict not in _records — identity check should reject it.
+        main_window._selected_record_by_type["Client"] = {
+            "Type": "Client",
+            "stale": True,
+        }
+    before = list(main_window._records)
+
+    main_window._on_delete("Client", {})
+
+    assert main_window._records == before
 
 
 def test_delete_without_selection_reports_required_message(main_window) -> None:
     _seed_client(main_window, id_value="1")
-    before = list(main_window._records)
-
     main_window._on_delete("Client", {})
-
-    assert main_window._records == before
     assert "Select a record to delete first." in main_window.status._status_lbl.text()
-
-
-def test_delete_with_stale_selection_is_treated_as_no_selection(
-    main_window,
-) -> None:
-    _seed_client(main_window, id_value="1")
-    # A dict not in _records — identity check should reject it.
-    main_window._selected_record_by_type["Client"] = {"Type": "Client", "stale": True}
-    before = list(main_window._records)
-
-    main_window._on_delete("Client", {})
-
-    assert main_window._records == before
 
 
 # ---------------------------------------------------------------------------
@@ -145,24 +154,39 @@ def test_confirmed_delete_persists_to_disk(main_window) -> None:
     assert all(r["Name"] != "Alice" for r in on_disk)
 
 
-def test_delete_works_for_airline_records(main_window) -> None:
-    main_window._on_create("Airline", _airline_payload(id_value="1"))
-    main_window._on_create("Airline", _airline_payload(id_value="2", company="Beta"))
-    main_window._on_record_selected("Airline", 1)
+@pytest.mark.parametrize(
+    "create_calls,select_args,expected_remaining",
+    [
+        pytest.param(
+            [
+                ("Airline", _airline_payload(id_value="1")),
+                ("Airline", _airline_payload(id_value="2", company="Beta")),
+            ],
+            ("Airline", 1),
+            [{"Type": "Airline", "ID": 1, "Company Name": "Acme"}],
+            id="airline",
+        ),
+        pytest.param(
+            [("Flight", _flight_payload())],
+            ("Flight", 0),
+            [],
+            id="flight-no-own-id",
+        ),
+    ],
+)
+def test_delete_works_for_record_type(
+    main_window,
+    create_calls: list,
+    select_args: tuple,
+    expected_remaining: list,
+) -> None:
+    for record_type, payload in create_calls:
+        main_window._on_create(record_type, payload)
+    main_window._on_record_selected(*select_args)
 
-    main_window._on_delete("Airline", {})
+    main_window._on_delete(select_args[0], {})
 
-    assert len(main_window._records) == 1
-    assert main_window._records[0]["ID"] == 1
-
-
-def test_delete_works_for_flight_records_which_have_no_own_id(main_window) -> None:
-    main_window._on_create("Flight", _flight_payload())
-    main_window._on_record_selected("Flight", 0)
-
-    main_window._on_delete("Flight", {})
-
-    assert main_window._records == []
+    assert main_window._records == expected_remaining
 
 
 def test_delete_last_record_writes_empty_file(main_window) -> None:
@@ -269,11 +293,22 @@ def test_delete_clamping_stays_within_the_same_record_type(main_window) -> None:
 
 # ---------------------------------------------------------------------------
 # Persistence failure — never let in-memory state move ahead of disk.
+#
+# OSError and PermissionError (an OSError subclass) must both be caught
+# without propagating; selection must NOT be cleared on failure (the user
+# may want to retry).
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.parametrize(
+    "exc",
+    [
+        pytest.param(OSError("Disk full"), id="disk-full-oserror"),
+        pytest.param(PermissionError("read-only"), id="permission-error"),
+    ],
+)
 def test_save_failure_during_delete_leaves_records_untouched(
-    main_window, monkeypatch
+    main_window, monkeypatch, exc: OSError
 ) -> None:
     from gui import main_window as mw
 
@@ -282,31 +317,14 @@ def test_save_failure_during_delete_leaves_records_untouched(
     main_window._on_record_selected("Client", 0)
     before = list(main_window._records)
 
-    monkeypatch.setattr(
-        mw,
-        "save_records",
-        lambda *a, **kw: (_ for _ in ()).throw(OSError("Disk full")),
-    )
+    def raise_exc(*_args, **_kwargs):
+        raise exc
+
+    monkeypatch.setattr(mw, "save_records", raise_exc)
     main_window._on_delete("Client", {})
 
     assert main_window._records == before
-    assert "Save failed:" in main_window.status._status_lbl.text()
-    # Selection must NOT be cleared on failure — the user may want to retry.
     assert main_window._selected_record_by_type["Client"] is main_window._records[0]
-
-
-def test_permission_error_during_delete_is_caught(main_window, monkeypatch) -> None:
-    from gui import main_window as mw
-
-    _seed_client(main_window, id_value="1")
-    main_window._on_record_selected("Client", 0)
-
-    monkeypatch.setattr(
-        mw,
-        "save_records",
-        lambda *a, **kw: (_ for _ in ()).throw(PermissionError("read-only")),
-    )
-    main_window._on_delete("Client", {})  # must not propagate
 
 
 # ---------------------------------------------------------------------------

@@ -100,6 +100,8 @@ Unit tests live under [tests/](../tests/), with one test module per `src/` packa
 python -m pytest
 ```
 
+For conventions on how the team writes tests — defaulting to `@pytest.mark.parametrize`, naming, fixtures, and what `pytest.raises` should match — see the [Unit testing standards](contributing/testing-standards.md).
+
 ## Packaging
 
 The deliverable is built with **PyInstaller 6.6.0** (pinned — do not upgrade without team agreement):

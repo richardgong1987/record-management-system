@@ -54,17 +54,29 @@ def test_successful_create_appends_record_to_memory(main_window) -> None:
 
 # ---------------------------------------------------------------------------
 # Save-failure rollback — the actual hotfix being verified.
+#
+# OSError and PermissionError (an OSError subclass) must both be caught
+# by the orchestrator: rolled back in memory and reported through the
+# status bar, never re-raised.
 # ---------------------------------------------------------------------------
 
 
-def test_save_failure_rolls_back_in_memory_append(main_window, monkeypatch) -> None:
+@pytest.mark.parametrize(
+    "exc",
+    [
+        pytest.param(OSError("Disk full"), id="disk-full-oserror"),
+        pytest.param(PermissionError("read-only"), id="permission-error"),
+    ],
+)
+def test_save_failure_rolls_back_in_memory_append(
+    main_window, monkeypatch, exc: OSError
+) -> None:
     from gui import main_window as mw
 
-    def raise_disk_full(*_args, **_kwargs):
-        raise OSError("Disk full")
+    def raise_exc(*_args, **_kwargs):
+        raise exc
 
-    monkeypatch.setattr(mw, "save_records", raise_disk_full)
-
+    monkeypatch.setattr(mw, "save_records", raise_exc)
     before = len(main_window._records)
 
     # The orchestrator must NOT propagate the OSError — it catches it,
@@ -75,17 +87,6 @@ def test_save_failure_rolls_back_in_memory_append(main_window, monkeypatch) -> N
         "Save failure must roll back the in-memory append so _records "
         "stays consistent with the on-disk file."
     )
-
-
-def test_save_failure_does_not_raise(main_window, monkeypatch) -> None:
-    from gui import main_window as mw
-
-    monkeypatch.setattr(
-        mw, "save_records", lambda *a, **kw: (_ for _ in ()).throw(PermissionError("ro"))
-    )
-
-    # PermissionError is a subclass of OSError — must be caught too.
-    main_window._on_create("Client", _client_payload(id_value="43"))
 
 
 def test_validation_failure_does_not_touch_records(main_window) -> None:
