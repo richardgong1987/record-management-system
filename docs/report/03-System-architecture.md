@@ -1,0 +1,5 @@
+## System Architecture
+
+The codebase is organised into four distinct layers: the GUI layer for user interaction; the service layer in `src/data/record/service.py` for record construction and validation; the repository layer in `src/data/record/repository.py` for file input and output; and the schema layer defining permitted fields for each record type. This separation gives each module a clearly defined responsibility, reflecting the layered architectural approach discussed by Martin (2017).
+
+Within the GUI layer, the application consistently follows the Model-View-Controller (MVC) pattern. `BaseFormView` and `BaseFormController` act as reusable parent classes from which the Client, Airline, and Flight form components inherit. `TabView` and `TabController` combine a form widget with a record-list widget, while `MainWindow` assembles all tabs and connects interface actions to data operations. This structure keeps components focused on specific responsibilities and promotes clearer separation between interface logic and data operations, aligning with the software design principles described by Martin (2008) and Boswell and Foucher (2011).
