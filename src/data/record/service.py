@@ -21,11 +21,12 @@ def create_record(record_type: str, payload: dict) -> dict:
 
     record = _project_payload(record_type, payload)
     _coerce_integers(record)
-    
+
     check_required(record_type, record)
     check_positive_integers(record)
     check_flight_date(record)
     return record
+
 
 def _project_payload(record_type: str, payload: dict) -> dict:
     record = {"Type": record_type}

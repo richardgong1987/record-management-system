@@ -103,7 +103,7 @@ def test_unknown_record_type_raises_validation_error() -> None:
     ],
 )
 def test_empty_required_field_reports_required_message(
-        record_type: str, payload_factory, field: str
+    record_type: str, payload_factory, field: str
 ) -> None:
     with pytest.raises(RecordValidationError, match=f"{field} is required"):
         create_record(record_type, payload_factory())
@@ -124,11 +124,10 @@ def test_non_integer_id_reports_whole_number_message(id_value: str) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_negative_integer_id_is_accepted() -> None:
-    # The brief doesn't forbid negatives; document the current behaviour so
-    # adding a positive-int check later is a deliberate change.
-    record = create_record("Airline", {"ID": "-5", "Company Name": "X"})
-    assert record["ID"] == -5
+def test_negative_integer_id_is_rejected() -> None:
+    # Issue #18 requires invalid input to be rejected before saving.
+    with pytest.raises(RecordValidationError, match="ID must be greater than zero"):
+        create_record("Airline", {"ID": "-5", "Company Name": "X"})
 
 
 def test_int_with_surrounding_whitespace_is_coerced() -> None:
@@ -143,9 +142,7 @@ def test_int_with_surrounding_whitespace_is_coerced() -> None:
 
 
 def test_unknown_payload_fields_are_dropped() -> None:
-    record = create_record(
-        "Airline", {"ID": "1", "Company Name": "X", "Garbage": "z"}
-    )
+    record = create_record("Airline", {"ID": "1", "Company Name": "X", "Garbage": "z"})
     assert "Garbage" not in record
 
 
