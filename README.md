@@ -35,7 +35,7 @@ A second workflow ([`.github/workflows/test.yml`](.github/workflows/test.yml)) r
 pytest
 ```
 
-Test configuration (discovery paths and `src/` on the import path) lives in [`pyproject.toml`](pyproject.toml) under `[tool.pytest.ini_options]`. New modules need their own tests under `tests/<area>/` — the assignment brief requires unit tests for each module.
+Test configuration (discovery paths and `src/` on the import path) lives in [`pyproject.toml`](pyproject.toml) under `[tool.pytest.ini_options]`. The suite is split by category: unit tests live under [`tests/unit/`](tests/unit/) (mirroring `src/`), with `tests/integration/` and `tests/e2e/` reserved for the future integration and end-to-end suites. New modules need their own unit tests under `tests/unit/<area>/` — the assignment brief requires unit tests for each module. For how the team writes those tests (parametrize-first, naming, fixtures), see the [Unit testing standards](docs/contributing/testing-standards.md).
 
 ## Documentation
 
@@ -50,6 +50,7 @@ This README is an index. The documents below live under [docs/](docs/).
 - [Joining the project](docs/contributing/joining-the-project.md) — how a new classmate is added to the GitHub repository and Kanban board.
 - [Git commit conventions](docs/contributing/commit-conventions.md) — commit message format the team follows for every commit.
 - [GUI walkthrough](docs/contributing/gui-walkthrough.md) — a tour through `src/gui/` for anyone picking up the code: what each folder does, how a click flows through the app, and where to look when you want to change something.
+- [Unit testing standards](docs/contributing/testing-standards.md) — how to write tests for this project: default to `@pytest.mark.parametrize`, house style, repeating patterns, and a pre-PR checklist.
 - _Planned:_ Coding standards
 
 ### Design

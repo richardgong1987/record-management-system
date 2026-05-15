@@ -238,39 +238,35 @@ def test_clear_does_not_touch_other_tabs_selection(main_window) -> None:
 
 # ---------------------------------------------------------------------------
 # Persistence failure — never let in-memory state move ahead of disk.
+#
+# OSError and PermissionError (an OSError subclass) must both be caught
+# without propagating.
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.parametrize(
+    "exc",
+    [
+        pytest.param(OSError("Disk full"), id="disk-full-oserror"),
+        pytest.param(PermissionError("read-only"), id="permission-error"),
+    ],
+)
 def test_save_failure_during_clear_leaves_records_untouched(
-    main_window, monkeypatch
+    main_window, monkeypatch, exc: OSError
 ) -> None:
     from gui import main_window as mw
 
     _seed(main_window, "Client", **_client_payload(id_value="1"))
     before = list(main_window._records)
 
-    monkeypatch.setattr(
-        mw,
-        "save_records",
-        lambda *a, **k: (_ for _ in ()).throw(OSError("Disk full")),
-    )
+    def raise_exc(*_args, **_kwargs):
+        raise exc
+
+    monkeypatch.setattr(mw, "save_records", raise_exc)
     main_window._on_clear_all("Client")
 
     assert main_window._records == before
     assert "Save failed:" in main_window.status._status_lbl.text()
-
-
-def test_permission_error_during_clear_is_caught(main_window, monkeypatch) -> None:
-    from gui import main_window as mw
-
-    _seed(main_window, "Client", **_client_payload(id_value="1"))
-
-    monkeypatch.setattr(
-        mw,
-        "save_records",
-        lambda *a, **k: (_ for _ in ()).throw(PermissionError("read-only")),
-    )
-    main_window._on_clear_all("Client")  # must not propagate
 
 
 # ---------------------------------------------------------------------------

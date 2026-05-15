@@ -38,23 +38,40 @@ def _flight(**overrides) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def test_create_client_coerces_id_to_int() -> None:
-    record = create_record("Client", _client(ID="42"))
-    assert record["Type"] == "Client"
-    assert record["ID"] == 42  # not the string "42"
-
-
-def test_create_airline_returns_canonical_record() -> None:
-    record = create_record("Airline", {"ID": "7", "Company Name": "Acme"})
-    assert record == {"Type": "Airline", "ID": 7, "Company Name": "Acme"}
-
-
-def test_create_flight_coerces_both_foreign_ids() -> None:
-    record = create_record("Flight", _flight())
-    assert record["Type"] == "Flight"
-    assert record["Client_ID"] == 1
-    assert record["Airline_ID"] == 2
-    assert record["Date"] == "2026-06-01T09:00:00"
+@pytest.mark.parametrize(
+    "record_type,payload,expected_subset",
+    [
+        pytest.param(
+            "Client",
+            _client(ID="42"),
+            {"Type": "Client", "ID": 42},
+            id="client-id-coerced-to-int",
+        ),
+        pytest.param(
+            "Airline",
+            {"ID": "7", "Company Name": "Acme"},
+            {"Type": "Airline", "ID": 7, "Company Name": "Acme"},
+            id="airline-canonical-record",
+        ),
+        pytest.param(
+            "Flight",
+            _flight(),
+            {
+                "Type": "Flight",
+                "Client_ID": 1,
+                "Airline_ID": 2,
+                "Date": "2026-06-01T09:00:00",
+            },
+            id="flight-foreign-ids-coerced",
+        ),
+    ],
+)
+def test_create_record_happy_path(
+    record_type: str, payload: dict, expected_subset: dict
+) -> None:
+    record = create_record(record_type, payload)
+    for key, value in expected_subset.items():
+        assert record[key] == value
 
 
 # ---------------------------------------------------------------------------
@@ -153,16 +170,20 @@ def test_only_type_and_allowed_fields_are_present() -> None:
 
 # ---------------------------------------------------------------------------
 # Error-type contract — only RecordValidationError escapes the service.
+# No bare ValueError / TypeError / KeyError should leak.
 # ---------------------------------------------------------------------------
 
 
-def test_all_failure_modes_raise_record_validation_error() -> None:
-    # No bare ValueError / TypeError / KeyError should leak.
-    cases = [
-        ("UnknownType", {"ID": "1"}),
-        ("Client", _client(ID="")),
-        ("Client", _client(ID="not-a-number")),
-    ]
-    for record_type, payload in cases:
-        with pytest.raises(RecordValidationError):
-            create_record(record_type, payload)
+@pytest.mark.parametrize(
+    "record_type,payload",
+    [
+        pytest.param("UnknownType", {"ID": "1"}, id="unknown-type"),
+        pytest.param("Client", _client(ID=""), id="client-empty-id"),
+        pytest.param("Client", _client(ID="not-a-number"), id="client-bad-id-format"),
+    ],
+)
+def test_all_failure_modes_raise_record_validation_error(
+    record_type: str, payload: dict
+) -> None:
+    with pytest.raises(RecordValidationError):
+        create_record(record_type, payload)

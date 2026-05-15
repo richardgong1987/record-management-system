@@ -21,7 +21,10 @@ src/
 ├── data/          # Data-access layer over the on-disk record store
 ├── gui/           # Desktop GUI
 └── record/        # On-disk record store (record.jsonl)
-tests/             # Unit tests (one module per src/ package)
+tests/             # Test suite, split by category
+  unit/            # Unit tests (one module per src/ package)
+  integration/     # Reserved for future integration tests
+  e2e/             # Reserved for future end-to-end tests
 docs/              # Project documentation
 ```
 
@@ -94,11 +97,27 @@ python src/main.py
 
 ## Testing
 
-Unit tests live under [tests/](../tests/), with one test module per `src/` package. Run all tests with:
+The test suite under [tests/](../tests/) is split by category:
+
+- [`tests/unit/`](../tests/unit/) — unit tests, one module per `src/` package. This is where everything currently lives.
+- `tests/integration/` — reserved for future integration tests (multiple modules wired together, real filesystem).
+- `tests/e2e/` — reserved for future end-to-end tests (driving the GUI through real Qt events).
+
+Run all tests with:
 
 ```bash
 python -m pytest
 ```
+
+To run just one category (once the others exist):
+
+```bash
+python -m pytest tests/unit
+python -m pytest tests/integration
+python -m pytest tests/e2e
+```
+
+For conventions on how the team writes tests — defaulting to `@pytest.mark.parametrize`, naming, fixtures, and what `pytest.raises` should match — see the [Unit testing standards](contributing/testing-standards.md).
 
 ## Packaging
 
