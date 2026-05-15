@@ -1,6 +1,8 @@
 # Unit Testing Standards
 
-Practical conventions the team follows for every test under [tests/](../../tests/). The CSCK541 brief asks for unit tests per module; these standards keep the suite simple and readable as it grows.
+Practical conventions the team follows for every unit test under [tests/unit/](../../tests/unit/). The CSCK541 brief asks for unit tests per module; these standards keep the suite simple and readable as it grows.
+
+> The test suite is split by category: `tests/unit/` (where every current test lives), with `tests/integration/` and `tests/e2e/` reserved for the future integration and end-to-end suites. The conventions below apply to **unit tests**; integration/e2e tests will get their own standards once those suites land.
 
 ## Useful links
 
@@ -152,7 +154,7 @@ def test_load_records_returns_empty_list(tmp_path, prepare_file):
 
 These predate the parametrize rule and still apply.
 
-- **One module per `src/` package.** A `src/foo/bar.py` module is tested by `tests/foo/test_bar.py`. The brief requires unit tests per module — match the layout so coverage gaps are visible.
+- **One module per `src/` package.** A `src/foo/bar.py` module is tested by `tests/unit/foo/test_bar.py`. The brief requires unit tests per module — match the layout so coverage gaps are visible.
 - **Use `tmp_path` for anything that touches the filesystem.** Never write to the real `src/data/record.jsonl` from a test.
 - **Use `monkeypatch` for module-level constants and dependencies.** For the GUI, that means patching `DATA_FILE_PATH` and `confirm` on the `gui.main_window` module before instantiating `MainWindow`.
 - **Pin exception types tightly.** `pytest.raises(Exception)` is too broad — it masks regressions. Prefer the specific class (e.g. `pytest.raises(jsonlines.InvalidLineError)`) and add `match="..."` when the message is part of the contract.

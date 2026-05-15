@@ -35,7 +35,7 @@ A second workflow ([`.github/workflows/test.yml`](.github/workflows/test.yml)) r
 pytest
 ```
 
-Test configuration (discovery paths and `src/` on the import path) lives in [`pyproject.toml`](pyproject.toml) under `[tool.pytest.ini_options]`. New modules need their own tests under `tests/<area>/` — the assignment brief requires unit tests for each module. For how the team writes those tests (parametrize-first, naming, fixtures), see the [Unit testing standards](docs/contributing/testing-standards.md).
+Test configuration (discovery paths and `src/` on the import path) lives in [`pyproject.toml`](pyproject.toml) under `[tool.pytest.ini_options]`. The suite is split by category: unit tests live under [`tests/unit/`](tests/unit/) (mirroring `src/`), with `tests/integration/` and `tests/e2e/` reserved for the future integration and end-to-end suites. New modules need their own unit tests under `tests/unit/<area>/` — the assignment brief requires unit tests for each module. For how the team writes those tests (parametrize-first, naming, fixtures), see the [Unit testing standards](docs/contributing/testing-standards.md).
 
 ## Documentation
 
