@@ -34,7 +34,7 @@ If the user declines the confirmation, nothing changes and the status bar says s
 Delete is short — there is no parsing or validation of new field values, because the operation removes a record rather than producing one. The pipeline degenerates to **Reader → Confirmer → Repository**:
 
 ```
-RecordListView.cellClicked            → Reader      (row click → stored absolute index; fires on every click so re-clicking the same row index after a refresh still propagates)
+RecordListView.cellClicked            → Reader      (row click → stored record reference; fires on every click so re-clicking the same row index after a refresh still propagates)
 BaseFormView.delete_btn.clicked       → Reader      (intent to delete; no payload needed)
 gui.common.dialogs.confirm            → Confirmer   (modal Yes/No)
 MainWindow._on_delete                 → Orchestrator (build survivor list, save, swap)
@@ -49,7 +49,7 @@ save_records                          → Repository  (atomic JSONL write)
 
 ```mermaid
 flowchart TD
-    A[User clicks a row in the table] --> B[selection stored as absolute index]
+    A[User clicks a row in the table] --> B[selection stored as record reference]
     B --> C[User clicks Delete on the form]
     C --> D[BaseFormController.delete_requested]
     D --> E[TabController re-emits with record_type]
@@ -99,10 +99,10 @@ No data-layer code changes are required.
 | Stored selection index is stale (out of range — e.g. a previous delete invalidated it but the user clicked Delete again on the same form) | Treated as no selection — same message. |
 | User opens the confirmation dialog and clicks **No** (or closes the dialog) | Status bar: `"Delete cancelled."`; in-memory list and file are untouched. |
 | User confirms deletion of the last record | `new_records` is `[]`; `save_records` writes an empty JSONL file; `load_records` would return `[]` on next launch. |
-| User confirms deletion of a Flight (no own ID) | Works the same as Client/Airline — delete keys off the absolute index, not the ID. |
+| User confirms deletion of a Flight (no own ID) | Works the same as Client/Airline — delete keys off the stored record reference (identity-safe), not the ID, so two Flights with identical field values stay distinguishable. |
 | Disk-write failure during `save_records` (`OSError` / `PermissionError`) | `self._records` is **not** reassigned; the previously selected row is still in memory and on disk. Status bar shows `"Save failed: …"`. |
 | User had the form populated from an earlier row-click, then deletes that row | After a successful delete the form is re-populated with whatever record now sits at the same table-row position (or the last survivor if the deleted row was past the end). Consecutive Delete clicks therefore remove the next visible row without needing another click. If nothing of that type remains, the form is cleared and the per-type selection is `None`. |
-| User has scrolled to a different page and the selection points to a record off-screen | Delete still operates on the absolute index, so the off-screen row is removed. After refresh the pager may move the user back a page if their page no longer has rows; this is handled by `paginate`'s existing clamp. |
+| User has scrolled to a different page and the selection points to a record off-screen | Delete still operates on the stored record reference, so the off-screen row is removed. After refresh the pager may move the user back a page if their page no longer has rows; this is handled by `paginate`'s existing clamp. |
 
 ---
 
@@ -127,7 +127,8 @@ No data-layer code changes are required.
 
 ## Why this shape
 
-- **Delete keys off the selection, not the form payload.** The form's contents may have drifted away from the row the user actually clicked (they could have edited fields after selecting). Operating on `self._selected_index_by_type[record_type]` removes ambiguity: the deletion targets the row the user pointed at, full stop. The payload argument on the Qt slot is kept to match the create/update signal shape and is ignored on purpose.
+- **Delete keys off the selection, not the form payload.** The form's contents may have drifted away from the row the user actually clicked (they could have edited fields after selecting). Operating on `self._selected_record_by_type[record_type]` removes ambiguity: the deletion targets the row the user pointed at, full stop. The payload argument on the Qt slot is kept to match the create/update signal shape and is ignored on purpose.
+- **Selection is the record reference, not an absolute index.** `self._records.index(record)` uses `dict.__eq__`, so two records with identical field values (e.g. duplicate Flights) collapse to the first match. Storing the dict reference directly and resolving the visible position via identity (`r is record`) keeps duplicates distinguishable and also makes selections in other tabs survive `_on_clear_all`'s list rewrite without an explicit rebase step.
 - **Confirmation defaults to No.** Hitting Enter on a focused message box is too easy. The default button is `QMessageBox.No` so accidental dismissals do not delete data.
 - **Confirmation lives behind a shared seam.** Tests should not pop a real dialog. `confirm` is imported by name in `gui.main_window`, so a one-line `monkeypatch.setattr(gui.main_window, "confirm", lambda *_: True)` substitutes both delete and clear-all dialogs without touching `QMessageBox` internals.
 - **Build new list, then swap.** Mirrors the create-flow rollback and the update-flow swap: in-memory state is only mutated **after** persistence succeeds, so a disk failure can never leave the GUI and the file out of sync.
@@ -146,7 +147,7 @@ No data-layer code changes are required.
        ↓
 3. TabController re-emits record_selected("Client", row_index)
        ↓
-4. MainWindow._on_record_selected stores the absolute index and
+4. MainWindow._on_record_selected stores the record reference and
    populates the form (shared with the update flow).
        ↓
 5. User clicks [Delete] in ClientFormView
@@ -156,7 +157,7 @@ No data-layer code changes are required.
 7. TabController re-emits delete_requested("Client", payload)
        ↓
 8. MainWindow._on_delete("Client", payload):
-       a. idx = self._selected_index_by_type.get("Client")
+       a. record = self._selected_record("Client")  # identity-checked
           → if None or out of range: status "Select a record to delete first.", return
        b. record = self._records[idx]
        c. if not confirm(self, "Confirm delete", f"Delete this Client record?\n\n{record}"):

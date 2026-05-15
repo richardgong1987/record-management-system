@@ -80,12 +80,12 @@ def test_update_without_selection_reports_required_message(main_window) -> None:
     assert "Select a record to update first." in main_window.status._status_lbl.text()
 
 
-def test_update_with_stale_selection_index_is_treated_as_no_selection(
+def test_update_with_stale_selection_is_treated_as_no_selection(
     main_window,
 ) -> None:
     _seed_client(main_window, id_value="1")
-    # Force a selection past the end of the records list.
-    main_window._selected_index_by_type["Client"] = 99
+    # Force a selection that's no longer in _records (identity-check fails).
+    main_window._selected_record_by_type["Client"] = {"Type": "Client", "stale": True}
 
     before = list(main_window._records)
     main_window._on_update("Client", _client_payload(id_value="1", name="Mallory"))
@@ -132,7 +132,7 @@ def test_selecting_a_row_populates_the_form(main_window) -> None:
     form = main_window._tabs_by_type["Client"].view.form
     assert form.form_inputs["ID"].text() == "7"
     assert form.form_inputs["Name"].text() == "Bob"
-    assert main_window._selected_index_by_type["Client"] == 0
+    assert main_window._selected_record_by_type["Client"] is main_window._records[0]
 
 
 def test_update_replaces_the_selected_record_in_place(main_window) -> None:

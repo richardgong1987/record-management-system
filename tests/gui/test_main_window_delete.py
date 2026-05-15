@@ -75,11 +75,12 @@ def test_delete_without_selection_reports_required_message(main_window) -> None:
     assert "Select a record to delete first." in main_window.status._status_lbl.text()
 
 
-def test_delete_with_stale_selection_index_is_treated_as_no_selection(
+def test_delete_with_stale_selection_is_treated_as_no_selection(
     main_window,
 ) -> None:
     _seed_client(main_window, id_value="1")
-    main_window._selected_index_by_type["Client"] = 99
+    # A dict not in _records — identity check should reject it.
+    main_window._selected_record_by_type["Client"] = {"Type": "Client", "stale": True}
     before = list(main_window._records)
 
     main_window._on_delete("Client", {})
@@ -197,11 +198,11 @@ def test_deleting_the_only_record_clears_the_form(main_window) -> None:
 def test_deleting_the_only_record_drops_the_selection_to_none(main_window) -> None:
     _seed_client(main_window, id_value="1")
     main_window._on_record_selected("Client", 0)
-    assert main_window._selected_index_by_type["Client"] == 0
+    assert main_window._selected_record_by_type["Client"] is main_window._records[0]
 
     main_window._on_delete("Client", {})
 
-    assert main_window._selected_index_by_type["Client"] is None
+    assert main_window._selected_record_by_type["Client"] is None
 
 
 def test_consecutive_delete_clicks_keep_removing_rows(main_window) -> None:
@@ -219,7 +220,7 @@ def test_consecutive_delete_clicks_keep_removing_rows(main_window) -> None:
     main_window._on_delete("Client", {})  # must remove Carol
 
     assert main_window._records == []
-    assert main_window._selected_index_by_type["Client"] is None
+    assert main_window._selected_record_by_type["Client"] is None
 
 
 def test_delete_repopulates_form_with_the_record_now_at_that_position(
@@ -233,7 +234,8 @@ def test_delete_repopulates_form_with_the_record_now_at_that_position(
 
     form = main_window._tabs_by_type["Client"].view.form
     assert form.form_inputs["Name"].text() == "Bob"
-    assert main_window._selected_index_by_type["Client"] == 0
+    # Selection now points to the surviving record at the same table position.
+    assert main_window._selected_record_by_type["Client"] is main_window._records[0]
 
 
 def test_deleting_the_last_row_clamps_selection_to_the_new_last(main_window) -> None:
@@ -245,7 +247,7 @@ def test_deleting_the_last_row_clamps_selection_to_the_new_last(main_window) -> 
 
     form = main_window._tabs_by_type["Client"].view.form
     assert form.form_inputs["Name"].text() == "Alice"
-    assert main_window._selected_index_by_type["Client"] == 0
+    assert main_window._selected_record_by_type["Client"] is main_window._records[0]
 
 
 def test_delete_clamping_stays_within_the_same_record_type(main_window) -> None:
@@ -260,7 +262,7 @@ def test_delete_clamping_stays_within_the_same_record_type(main_window) -> None:
     main_window._on_delete("Client", {})
 
     # The new selection must point to Bob, not the Airline at abs idx 0.
-    selected = main_window._records[main_window._selected_index_by_type["Client"]]
+    selected = main_window._selected_record_by_type["Client"]
     assert selected["Type"] == "Client"
     assert selected["Name"] == "Bob"
 
@@ -290,7 +292,7 @@ def test_save_failure_during_delete_leaves_records_untouched(
     assert main_window._records == before
     assert "Save failed:" in main_window.status._status_lbl.text()
     # Selection must NOT be cleared on failure — the user may want to retry.
-    assert main_window._selected_index_by_type["Client"] == 0
+    assert main_window._selected_record_by_type["Client"] is main_window._records[0]
 
 
 def test_permission_error_during_delete_is_caught(main_window, monkeypatch) -> None:
@@ -305,3 +307,36 @@ def test_permission_error_during_delete_is_caught(main_window, monkeypatch) -> N
         lambda *a, **kw: (_ for _ in ()).throw(PermissionError("read-only")),
     )
     main_window._on_delete("Client", {})  # must not propagate
+
+
+# ---------------------------------------------------------------------------
+# Codex P1 regression: identity-based selection.
+#
+# Two Flight records with identical field values are allowed (no own-ID
+# uniqueness rule). The previous implementation resolved the selected
+# absolute index via self._records.index(record), which used dict equality
+# and returned the FIRST match — so clicking the second duplicate row and
+# clicking Delete would actually remove the first. Identity-based storage
+# fixes it: the dict reference of the clicked row is unique even when its
+# contents aren't.
+# ---------------------------------------------------------------------------
+
+
+def test_selecting_one_of_two_identical_flights_deletes_the_correct_row(
+    main_window,
+) -> None:
+    main_window._on_create("Flight", _flight_payload())
+    main_window._on_create("Flight", _flight_payload())  # identical values
+    assert len(main_window._records) == 2
+
+    first, second = main_window._records[0], main_window._records[1]
+
+    # Click the SECOND row in the Flight table.
+    main_window._on_record_selected("Flight", 1)
+    assert main_window._selected_record_by_type["Flight"] is second
+
+    main_window._on_delete("Flight", {})
+
+    assert len(main_window._records) == 1
+    # The survivor must be the FIRST flight (by identity), not the second.
+    assert main_window._records[0] is first

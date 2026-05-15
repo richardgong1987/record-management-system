@@ -181,24 +181,57 @@ def test_clear_resets_form_and_selection_for_active_tab(main_window) -> None:
     main_window._on_record_selected("Client", 0)
     form = main_window._tabs_by_type["Client"].view.form
     assert form.form_inputs["Name"].text() == "Alice"
-    assert main_window._selected_index_by_type["Client"] == 0
+    assert main_window._selected_record_by_type["Client"] is main_window._records[0]
 
     main_window._on_clear_all("Client")
 
-    assert main_window._selected_index_by_type["Client"] is None
+    assert main_window._selected_record_by_type["Client"] is None
     assert form.form_inputs["Name"].text() == ""
 
 
-def test_clear_does_not_touch_other_tabs_selection(main_window) -> None:
+def test_clear_preserves_other_tab_selection_when_indices_shift(
+    main_window,
+) -> None:
+    """Codex P2 regression: under the old absolute-index storage, clearing
+    Clients (which sat at absolute indices 0 and 1) used to leave the
+    Airline tab's stored index pointing at the wrong record (or out of
+    bounds). With identity-based storage the Airline selection survives
+    the list rewrite untouched."""
     _seed(main_window, "Client", **_client_payload(id_value="1"))
+    _seed(main_window, "Client", **_client_payload(id_value="2"))
     _seed(main_window, "Airline", **_airline_payload(id_value="9", company="Acme"))
+
     main_window._on_record_selected("Airline", 0)
-    airline_selection = main_window._selected_index_by_type["Airline"]
+    airline_ref = main_window._selected_record_by_type["Airline"]
+    assert airline_ref is main_window._records[2]  # abs idx 2 before clear
 
     main_window._on_clear_all("Client")
 
-    # Airline tab's selection must still point at the same record.
-    assert main_window._selected_index_by_type["Airline"] == airline_selection
+    # Airline record now sits at abs idx 0, but the stored selection still
+    # resolves to the SAME dict (identity preserved across the rewrite).
+    assert main_window._selected_record_by_type["Airline"] is airline_ref
+    assert main_window._records[0] is airline_ref
+
+    # And a subsequent delete on the Airline tab targets that same record.
+    main_window._on_delete("Airline", {})
+    assert all(r is not airline_ref for r in main_window._records)
+
+
+def test_clear_does_not_touch_other_tabs_selection(main_window) -> None:
+    """Codex P2 regression: clear-all rebuilds _records, so an absolute-index
+    selection on another tab used to drift. Storing the dict reference keeps
+    identity stable across the list rewrite."""
+    _seed(main_window, "Client", **_client_payload(id_value="1"))
+    _seed(main_window, "Airline", **_airline_payload(id_value="9", company="Acme"))
+    main_window._on_record_selected("Airline", 0)
+    airline_ref = main_window._selected_record_by_type["Airline"]
+
+    main_window._on_clear_all("Client")
+
+    # The selected Airline dict must be the SAME object — same identity, not
+    # just same values — and must still be present in _records.
+    assert main_window._selected_record_by_type["Airline"] is airline_ref
+    assert any(r is airline_ref for r in main_window._records)
     airline_form = main_window._tabs_by_type["Airline"].view.form
     assert airline_form.form_inputs["Company Name"].text() == "Acme"
 

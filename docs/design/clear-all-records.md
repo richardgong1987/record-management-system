@@ -150,7 +150,7 @@ No data-layer code changes are required.
        c. new_records = [r for r in self._records if r["Type"] != "Client"]
        d. save_records(DATA_FILE_PATH, new_records)              ← atomic write
        e. self._records = new_records                            ← only AFTER save succeeds
-       f. self._selected_index_by_type["Client"] = None
+       f. self._selected_record_by_type["Client"] = None
        g. tab.view.form.clear()
        h. self._refresh_all_tables()
        i. status bar: "Cleared all Client records."

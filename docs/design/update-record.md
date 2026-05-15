@@ -56,7 +56,7 @@ save_records                          → Repository (atomic JSONL write of the 
 flowchart TD
     A[User clicks a row in the table] --> B[RecordListController.record_selected]
     B --> C[TabController re-emits with record_type]
-    C --> D[MainWindow._on_record_selected:<br/>map page row to absolute index,<br/>populate form]
+    C --> D[MainWindow._on_record_selected:<br/>store record reference,<br/>populate form]
     D --> E[User edits fields, clicks Update]
     E --> F[BaseFormController.update_requested]
     F --> G[TabController re-emits with record_type]
@@ -121,7 +121,7 @@ No data-layer code changes are required for this feature; the layer's contract w
 | User edits a Flight row | No own-`ID` uniqueness rule for flights, so `check_unique_id` is a no-op as designed; the other validators still run. |
 | Payload contains stale or unknown fields | Silently dropped by `_project_payload`; only canonical fields are persisted. |
 | Disk-write failure during `save_records` (`OSError` / `PermissionError`) | The in-memory `_records` is **not** swapped in; the on-disk file is whatever `os.replace` last committed. Status bar shows `"Save failed: …"`. |
-| User selects a row, then changes the search/page so the selected record is no longer on screen | Index is still valid — update operates on the absolute index, not the visible row. The table refresh after a successful update may move the record to a different page; that's fine. |
+| User selects a row, then changes the search/page so the selected record is no longer on screen | Selection is still valid — update operates on the stored record reference, not the visible row. The table refresh after a successful update may move the record to a different page; that's fine. |
 
 ---
 
@@ -146,7 +146,7 @@ No data-layer code changes are required for this feature; the layer's contract w
 
 ## Why this shape
 
-- **Replace by absolute index, not by ID lookup.** The user's selection is a row, not an ID. Storing the absolute index in `_records` makes the operation O(1) and lets us update Flight records (which have no own ID) the same way as Client/Airline records.
+- **Replace by record reference, not by ID lookup.** The user's selection is a row, not an ID. Storing the dict reference in `_selected_record_by_type` lets us update Flight records (which have no own ID, and may have identical field values to another flight) the same way as Client/Airline records — identity, not value equality, decides which row is targeted.
 - **Uniqueness check excludes the current record.** If we passed the full list to `check_unique_id`, an update that doesn't touch `ID` would always fail. Passing `records[:idx] + records[idx+1:]` keeps the existing validator API untouched and expresses the intent at the call-site.
 - **Build new list, then swap.** Mirrors the create-flow's rollback discipline: in-memory state is only mutated **after** persistence succeeds, so a disk failure can never leave the GUI and the file out of sync.
 - **`create_record` reused.** The validation pipeline for "is this a valid record?" is identical for create and update. Renaming or duplicating it would only add surface area; the orchestrator's step comment names the intent.
@@ -166,9 +166,9 @@ No data-layer code changes are required for this feature; the layer's contract w
 3. TabController re-emits record_selected("Client", row_index)
        ↓
 4. MainWindow._on_record_selected("Client", row_index):
-       a. compute the absolute index in self._records
-       b. self._selected_index_by_type["Client"] = absolute_index
-       c. tab.view.form.populate(self._records[absolute_index])
+       a. selected = page.rows[row_index]      # same dict reference as in self._records
+       b. self._selected_record_by_type["Client"] = selected
+       c. tab.view.form.populate(selected)
        ↓
 5. User edits fields and clicks [Update] in ClientFormView
        ↓
@@ -177,7 +177,7 @@ No data-layer code changes are required for this feature; the layer's contract w
 7. TabController re-emits update_requested("Client", payload)
        ↓
 8. MainWindow._on_update("Client", payload):
-       a. idx = self._selected_index_by_type.get("Client")
+       a. selected = self._selected_record("Client")  # identity-checked
           → if None or out of range: status "Select a record to update first.", return
        b. record = create_record("Client", payload)              ← validate + build
        c. check_unique_id(record, _records WITHOUT idx)          ← uniqueness vs others

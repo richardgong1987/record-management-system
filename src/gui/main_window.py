@@ -68,10 +68,11 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(1000, 600)
         self._records = load_records(DATA_FILE_PATH)
         self._page_by_type: dict[str, int] = {rt: 1 for rt in _RECORD_TYPES}
-        # Absolute index into self._records of the record currently selected
-        # in each tab's table. None when nothing is selected (or after a
-        # successful update clears the selection).
-        self._selected_index_by_type: dict[str, int | None] = {
+        # The record dict currently selected in each tab. Storing the
+        # reference (not an absolute index) keeps selection stable across
+        # list rewrites in other tabs and is identity-safe when two records
+        # have identical field values (e.g. duplicate Flights).
+        self._selected_record_by_type: dict[str, dict | None] = {
             rt: None for rt in _RECORD_TYPES
         }
 
@@ -147,28 +148,34 @@ class MainWindow(QMainWindow):
         self.status.set_status(f"Create {record_type}: {record}")
 
     def _on_record_selected(self, record_type: str, row_index: int) -> None:
-        # Step 1: Resolve the page-relative row to the absolute index in
-        # self._records (same dict reference, so .index() is exact).
         page = self._visible_page(record_type)
         if not 0 <= row_index < len(page.rows):
             return
+        # Store the dict reference directly: two records with identical
+        # values (e.g. duplicate Flights) stay distinguishable by identity.
         selected = page.rows[row_index]
-        self._selected_index_by_type[record_type] = self._records.index(selected)
-
-        # Step 2: Populate the form so the user can edit the loaded values.
+        self._selected_record_by_type[record_type] = selected
         self._tabs_by_type[record_type].view.form.populate(selected)
 
+    def _selected_record(self, record_type: str) -> dict | None:
+        # Return None for a stale selection — the dict may have been removed
+        # by clear-all or a programmatic mutation; identity check, not ==.
+        record = self._selected_record_by_type.get(record_type)
+        if record is None or not any(r is record for r in self._records):
+            return None
+        return record
+
     def _on_update(self, record_type: str, payload: dict) -> None:
-        idx = self._selected_index_by_type.get(record_type)
-        if idx is None or not 0 <= idx < len(self._records):
+        selected = self._selected_record(record_type)
+        if selected is None:
             self.status.set_status("Select a record to update first.")
             return
 
         try:
             record = create_record(record_type, payload)
-            # Uniqueness is checked against OTHER records, so a no-op ID edit
-            # still succeeds.
-            others = self._records[:idx] + self._records[idx + 1 :]
+            # Uniqueness is checked against OTHER records (identity-filtered)
+            # so a no-op ID edit still succeeds.
+            others = [r for r in self._records if r is not selected]
             check_unique_id(record, others)
         except RecordValidationError as exc:
             self.status.set_status(str(exc))
@@ -179,8 +186,7 @@ class MainWindow(QMainWindow):
             self.status.set_status("Update cancelled.")
             return
 
-        new_records = list(self._records)
-        new_records[idx] = record
+        new_records = [record if r is selected else r for r in self._records]
         try:
             save_records(DATA_FILE_PATH, new_records)
         except OSError as exc:
@@ -190,34 +196,32 @@ class MainWindow(QMainWindow):
             return
 
         self._records = new_records
+        self._selected_record_by_type[record_type] = record
         self._refresh_all_tables()
         self.status.set_status(f"Update {record_type}: {record}")
 
     def _on_delete(self, record_type: str, _payload: dict) -> None:
         # Delete keys off the stored selection, not the form payload, so an
         # edited-but-not-saved form cannot influence which row is removed.
-        idx = self._selected_index_by_type.get(record_type)
-        if idx is None or not 0 <= idx < len(self._records):
+        record = self._selected_record(record_type)
+        if record is None:
             self.status.set_status("Select a record to delete first.")
             return
 
-        record = self._records[idx]
         body = f"Delete this {record_type} record?\n\n{record}"
         if not confirm(self, "Confirm delete", body):
             self.status.set_status("Delete cancelled.")
             return
 
-        # Capture the table-row position now so selection survives the refresh
-        # — consecutive Delete clicks should keep removing the next visible row
-        # without forcing the user to re-click.
-        position_in_type = self._records_for_type(record_type).index(record)
+        # Capture the table-row position via identity so two identical-valued
+        # records (e.g. duplicate Flights) stay distinguishable.
+        type_records = self._records_for_type(record_type)
+        position_in_type = next(i for i, r in enumerate(type_records) if r is record)
 
-        new_records = self._records[:idx] + self._records[idx + 1 :]
+        new_records = [r for r in self._records if r is not record]
         try:
             save_records(DATA_FILE_PATH, new_records)
         except OSError as exc:
-            # Keep self._records pointing at the previous list so in-memory
-            # state never moves ahead of the on-disk file.
             self.status.set_status(f"Save failed: {exc}")
             return
 
@@ -230,13 +234,13 @@ class MainWindow(QMainWindow):
         survivors = self._records_for_type(record_type)
         tab = self._tabs_by_type[record_type]
         if not survivors:
-            self._selected_index_by_type[record_type] = None
+            self._selected_record_by_type[record_type] = None
             tab.view.form.clear()
             return
 
         new_position = min(deleted_position, len(survivors) - 1)
         new_record = survivors[new_position]
-        self._selected_index_by_type[record_type] = self._records.index(new_record)
+        self._selected_record_by_type[record_type] = new_record
         tab.view.form.populate(new_record)
 
     def _on_clear_all(self, record_type: str) -> None:
@@ -248,6 +252,8 @@ class MainWindow(QMainWindow):
             self.status.set_status("Clear cancelled.")
             return
 
+        # Other-type records keep their dict identity through this filter, so
+        # other tabs' selections remain valid without an explicit rebase.
         new_records = [r for r in self._records if r["Type"] != record_type]
         try:
             save_records(DATA_FILE_PATH, new_records)
@@ -256,7 +262,7 @@ class MainWindow(QMainWindow):
             return
 
         self._records = new_records
-        self._selected_index_by_type[record_type] = None
+        self._selected_record_by_type[record_type] = None
         self._tabs_by_type[record_type].view.form.clear()
         self._refresh_all_tables()
         self.status.set_status(f"Cleared all {record_type} records.")

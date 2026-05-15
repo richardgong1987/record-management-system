@@ -96,7 +96,7 @@ def test_consecutive_deletes_via_row_zero_click(qapp, monkeypatch, tmp_path) -> 
 
     # Step 1: click row 0 (Alice) and delete.
     table.cellClicked.emit(0, 0)
-    assert window._selected_index_by_type["Client"] == 0
+    assert window._selected_record_by_type["Client"] is window._records[0]
     window._on_delete("Client", {})
     assert len(window._records) == 1
     assert window._records[0]["Name"] == "Bob"
@@ -105,7 +105,7 @@ def test_consecutive_deletes_via_row_zero_click(qapp, monkeypatch, tmp_path) -> 
     # With itemSelectionChanged this click was swallowed; with cellClicked
     # it must propagate every time.
     table.cellClicked.emit(0, 0)
-    assert window._selected_index_by_type["Client"] == 0
+    assert window._selected_record_by_type["Client"] is window._records[0]
 
     # Step 3: delete must succeed, leaving no records.
     window._on_delete("Client", {})
