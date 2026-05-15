@@ -1,18 +1,8 @@
-{"Type": "Airline", "ID": 1, "Company Name": "2"}
-{"Type": "Airline", "ID": 1, "Company Name": "2"}
-{"Type": "Airline", "ID": 1, "Company Name": "2"}
-{"Type": "Airline", "ID": 1, "Company Name": "22"}
-{"Type": "Airline", "ID": 1, "Company Name": "22"}
-{"Type": "Airline", "ID": 1, "Company Name": "22"}
-{"Type": "Airline", "ID": 22, "Company Name": "33"}
-{"Type": "Airline", "ID": 22, "Company Name": "33"}
+{"Type": "Airline", "ID": 1, "Company Name": "2233"}
 {"Type": "Airline", "ID": 22, "Company Name": "33"}
 {"Type": "Airline", "ID": 2, "Company Name": "3"}
 {"Type": "Airline", "ID": 2, "Company Name": "3"}
-{"Type": "Airline", "ID": 2, "Company Name": "3"}
-{"Type": "Airline", "ID": 2, "Company Name": "3"}
-{"Type": "Airline", "ID": 2, "Company Name": "3"}
-{"Type": "Client", "ID": 1, "Name": "2", "Address Line 1": "3", "Address Line 2": "3", "Address Line 3": "3", "City": "4", "State": "4", "Zip Code": "e", "Country": "UK", "Phone Number": "2"}
+{"Type": "Client", "ID": 1, "Name": "23", "Address Line 1": "3", "Address Line 2": "3", "Address Line 3": "3", "City": "4", "State": "4", "Zip Code": "e", "Country": "UK", "Phone Number": "2"}
 {"Type": "Airline", "ID": 23, "Company Name": "22"}
 {"Type": "Client", "ID": 12, "Name": "23", "Address Line 1": "33", "Address Line 2": "33", "Address Line 3": "43", "City": "43", "State": "43", "Zip Code": "53", "Country": "USA", "Phone Number": "33"}
 {"Type": "Airline", "ID": 12, "Company Name": "23"}
@@ -21,7 +11,7 @@
 {"Type": "Airline", "ID": 6, "Company Name": "23"}
 {"Type": "Airline", "ID": 34, "Company Name": "23"}
 {"Type": "Client", "ID": 2, "Name": "2", "Address Line 1": "3", "Address Line 2": "", "Address Line 3": "", "City": "d", "State": "", "Zip Code": "", "Country": "UK", "Phone Number": "3"}
-{"Type": "Flight", "Client_ID": 1, "Airline_ID": 23, "Date": "233", "Start City": "233", "End City": "44"}
+{"Type": "Flight", "Client_ID": 1, "Airline_ID": 23, "Date": "2026-02-02", "Start City": "233", "End City": "44"}
 {"Type": "Flight", "Client_ID": 1, "Airline_ID": 23, "Date": "233", "Start City": "233", "End City": "44"}
 {"Type": "Flight", "Client_ID": 1, "Airline_ID": 23, "Date": "233", "Start City": "233", "End City": "44"}
 {"Type": "Flight", "Client_ID": 1, "Airline_ID": 23, "Date": "233", "Start City": "233", "End City": "44"}

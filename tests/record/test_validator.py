@@ -1,6 +1,6 @@
 import pytest
 
-from data.record.validator import (
+from record.validator import (
     RecordValidationError,
     check_flight_date,
     check_positive_integers,

@@ -65,6 +65,18 @@ class BaseFormView(QWidget):
                 payload[field] = widget.text().strip()
         return payload
 
+    def populate(self, record: dict) -> None:
+        for field, widget in self.form_inputs.items():
+            value = "" if record.get(field) is None else str(record.get(field, ""))
+            if isinstance(widget, QComboBox):
+                # Fall back to the placeholder (index 0) when the stored value
+                # isn't one of the combo's options — avoids silently keeping
+                # whatever was selected before.
+                idx = widget.findText(value)
+                widget.setCurrentIndex(idx if idx >= 0 else 0)
+            else:
+                widget.setText(value)
+
     def clear(self) -> None:
         for widget in self.form_inputs.values():
             if isinstance(widget, QComboBox):

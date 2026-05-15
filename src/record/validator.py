@@ -6,7 +6,7 @@ Validators raise ``RecordValidationError`` on failure and return ``None`` on suc
 
 from datetime import datetime
 
-from data.record.schema import INTEGER_FIELDS
+from record.schema import INTEGER_FIELDS
 
 REQUIRED_FIELDS = {
     "Client": ("ID", "Name", "Address Line 1", "City", "Country", "Phone Number"),

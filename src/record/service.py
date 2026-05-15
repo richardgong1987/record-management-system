@@ -6,8 +6,8 @@ in ``repository``. No GUI imports — the canonical field schemas live
 in ``schema``.
 """
 
-from data.record.schema import ALLOWED_FIELDS, INTEGER_FIELDS
-from data.record.validator import (
+from record.schema import ALLOWED_FIELDS, INTEGER_FIELDS
+from record.validator import (
     RecordValidationError,
     check_positive_integers,
     check_flight_date,
