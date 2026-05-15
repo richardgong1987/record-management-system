@@ -7,7 +7,12 @@ in ``schema``.
 """
 
 from data.record.schema import ALLOWED_FIELDS, INTEGER_FIELDS
-from data.record.validator import RecordValidationError, check_required
+from data.record.validator import (
+    RecordValidationError,
+    check_positive_integers,
+    check_flight_date,
+    check_required,
+)
 
 
 def create_record(record_type: str, payload: dict) -> dict:
@@ -16,7 +21,10 @@ def create_record(record_type: str, payload: dict) -> dict:
 
     record = _project_payload(record_type, payload)
     _coerce_integers(record)
+
     check_required(record_type, record)
+    check_positive_integers(record)
+    check_flight_date(record)
     return record
 
 
