@@ -1,7 +1,7 @@
 import pytest
 
-from data.record.service import create_record
-from data.record.validator import RecordValidationError
+from record.service import create_record
+from record.validator import RecordValidationError
 
 
 def _client(**overrides) -> dict:

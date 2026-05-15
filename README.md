@@ -56,8 +56,9 @@ This README is an index. The documents below live under [docs/](docs/).
 
 - [GUI layout](docs/design/gui-layout.md) — formal design for the application shell: tabs, forms, record list, status bar, signal flow.
 - [Create record](docs/design/create-record.md) — design and tour for the create-record flow: form click → validation → atomic JSONL write.
-- _Planned:_ Update record
-- _Planned:_ Delete record
+- [Update record](docs/design/update-record.md) — design and tour for the update-record flow: row click → form populate → validate → in-place replace → atomic write.
+- [Delete record](docs/design/delete-record.md) — design and tour for the delete-record flow: row click → Delete button → confirm dialog → atomic write of the survivor list.
+- [Clear all records](docs/design/clear-all-records.md) — design and tour for the Clear button: per-tab bulk delete of every record of the active type, with confirmation.
 - _Planned:_ Search & display records
 - _Planned:_ Architecture overview
 - _Planned:_ Directory structure explainer

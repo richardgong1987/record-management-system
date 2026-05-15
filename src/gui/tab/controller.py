@@ -7,10 +7,12 @@ class TabController(QObject):
     create_requested = Signal(str, dict)
     update_requested = Signal(str, dict)
     delete_requested = Signal(str, dict)
+    clear_all_requested = Signal(str)
     search_requested = Signal(str, str)
     show_all_requested = Signal(str)
     prev_requested = Signal(str)
     next_requested = Signal(str)
+    record_selected = Signal(str, int)
 
     def __init__(
         self, form_ctrl: QObject, list_ctrl: RecordListController, record_type: str
@@ -33,6 +35,9 @@ class TabController(QObject):
         self._form_ctrl.delete_requested.connect(
             lambda p: self.delete_requested.emit(rt, p)
         )
+        self._form_ctrl.clear_all_requested.connect(
+            lambda: self.clear_all_requested.emit(rt)
+        )
 
     def _wire_list_signals(self) -> None:
         rt = self._record_type
@@ -44,3 +49,6 @@ class TabController(QObject):
         )
         self._list_ctrl.prev_requested.connect(lambda: self.prev_requested.emit(rt))
         self._list_ctrl.next_requested.connect(lambda: self.next_requested.emit(rt))
+        self._list_ctrl.record_selected.connect(
+            lambda row: self.record_selected.emit(rt, row)
+        )

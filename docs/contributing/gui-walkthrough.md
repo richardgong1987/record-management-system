@@ -42,7 +42,7 @@ A few decisions worth knowing the reasoning behind:
 - **Tabs, not a record-type dropdown.** Tabs make the active record type obvious, and each tab keeps its own state — the form you typed in stays put when you switch away. The dropdown idea was rejected during the design discussion because it added a click for what is the most common navigation action.
 - **Form on the left, list on the right.** You pick or find a record on the right, you edit it on the left. Stretch ratio 1 : 2 (the list is twice as wide as the form) because the list usually has more to show.
 - **One shared `TabView` + `TabController`** instead of three near-identical per-type classes. Three copies of the same code is a refactor target under our coding standards, so we collapsed it into one.
-- **One status bar with two cells.** Left cell shows what just happened (`Status: Create Client {...}`). Right cell shows where the data lives (`Data file: src/record/record.jsonl`). Useful even before persistence is wired in.
+- **One status bar with two cells.** Left cell shows what just happened (`Status: Create Client {...}`). Right cell shows where the data lives (`Data file: src/data/record.jsonl`). Useful even before persistence is wired in.
 
 ---
 

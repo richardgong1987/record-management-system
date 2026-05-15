@@ -11,6 +11,7 @@ class BaseFormController(QObject, Generic[T]):
     create_requested = Signal(dict)
     update_requested = Signal(dict)
     delete_requested = Signal(dict)
+    clear_all_requested = Signal()
 
     def __init__(self, view: T) -> None:
         super().__init__()
@@ -18,7 +19,7 @@ class BaseFormController(QObject, Generic[T]):
         self._view.create_btn.clicked.connect(self._on_create)
         self._view.update_btn.clicked.connect(self._on_update)
         self._view.delete_btn.clicked.connect(self._on_delete)
-        self._view.clear_btn.clicked.connect(self._view.clear)
+        self._view.clear_btn.clicked.connect(self.clear_all_requested)
 
     def _on_create(self) -> None:
         self.create_requested.emit(self._view.read_payload())
