@@ -22,8 +22,8 @@ class Spacing:
     panel_padding_side: int = 14  # QGroupBox padding left/right
     panel_padding_bottom: int = 14  # QGroupBox padding-bottom
     title_left: int = 16  # title horizontal offset from panel edge
-    title_h_padding: int = 12  # horizontal padding inside title label
-    title_v_padding: int = 4  # vertical padding inside title label
+    title_h_padding: int = 22  # horizontal padding inside title label
+    title_v_padding: int = 5  # vertical padding inside title label
     row_spacing: int = 12  # vertical gap between rows inside a panel
     field_v_spacing: int = 10  # vertical gap between form rows
     field_h_spacing: int = 12  # horizontal gap between label and field
@@ -81,7 +81,7 @@ QTabBar::tab {{
     border-bottom: none;
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
-    padding: 10px 18px;
+    padding: 12px 18px;
     font-size: 18pt;
     min-width: 110px;
 }}
@@ -110,7 +110,7 @@ QGroupBox::title {{
     subcontrol-origin: margin;
     subcontrol-position: top left;
     left: {SPACING.title_left}px;
-    padding: {SPACING.title_v_padding}px {SPACING.title_h_padding}px;
+    padding: 5px 30px;
     background-color: #FFFFFF;
     color: #1F2933;
     font-size: 16pt;
