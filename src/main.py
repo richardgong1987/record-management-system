@@ -1,14 +1,19 @@
 import sys
 
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
+from conf.loader import load_config
 from gui.main_window import MainWindow
-from gui.style import apply_style
+from gui.styles import apply_app_style
 
 
 def main() -> int:
+    config = load_config()
     app = QApplication(sys.argv)
-    apply_style(app)
+    app.setApplicationName(config.name)
+    app.setWindowIcon(QIcon(str(config.icon_path)))
+    apply_app_style(app)
     win = MainWindow()
     win.show()
     win.raise_()

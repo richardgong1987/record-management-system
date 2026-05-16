@@ -8,6 +8,7 @@ from shared.utils.pagination import DEFAULT_PAGE_SIZE, Page, paginate
 def _rows(count: int) -> list[dict]:
     return [{"i": i} for i in range(count)]
 
+
 def test_default_page_size_is_fifteen() -> None:
     assert DEFAULT_PAGE_SIZE == 15
 
@@ -42,19 +43,21 @@ _PAGINATE_CASES = [
     ("psize-larger-page1", (10, 100, 1, 1, 1, 0, 10)),
     ("psize-larger-clamps", (10, 100, 7, 1, 1, 0, 10)),
 ]
+
+
 @pytest.mark.parametrize(
     "total,page_size,requested,expected_page,expected_total_pages,start,stop",
     [case for _, case in _PAGINATE_CASES],
     ids=[name for name, _ in _PAGINATE_CASES],
 )
 def test_paginate(
-        total: int,
-        page_size: int,
-        requested: int,
-        expected_page: int,
-        expected_total_pages: int,
-        start: int,
-        stop: int,
+    total: int,
+    page_size: int,
+    requested: int,
+    expected_page: int,
+    expected_total_pages: int,
+    start: int,
+    stop: int,
 ) -> None:
     rows = _rows(total)
     page = paginate(rows, current_page=requested, page_size=page_size)
@@ -69,9 +72,7 @@ def test_paginate(
 
 
 def test_empty_dataset_yields_canonical_empty_page() -> None:
-    assert paginate([], current_page=1) == Page(
-        rows=[], total_pages=1, current_page=1
-    )
+    assert paginate([], current_page=1) == Page(rows=[], total_pages=1, current_page=1)
 
 
 # ---------------------------------------------------------------------------

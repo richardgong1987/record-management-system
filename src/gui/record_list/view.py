@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from gui.style import decorate_search_input
+from gui.styles import SPACING, search_icon
 
 
 class RecordListView(QWidget):
@@ -24,8 +24,10 @@ class RecordListView(QWidget):
 
     def _build_widgets(self) -> None:
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("Search records")
-        decorate_search_input(self.search_input)
+        self.search_input.setPlaceholderText("Search")
+        self.search_input.setClearButtonEnabled(True)
+        self.search_input.addAction(search_icon(), QLineEdit.LeadingPosition)
+
         self.search_btn = QPushButton("Search")
         self.search_btn.setObjectName("primary")
         self.show_all_btn = QPushButton("Show All")
@@ -35,19 +37,23 @@ class RecordListView(QWidget):
         self.table.verticalHeader().setVisible(False)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.table.setAlternatingRowColors(True)
         self.table.setShowGrid(False)
+        self.table.setAlternatingRowColors(True)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table.horizontalHeader().setMinimumHeight(34)
+        self.table.horizontalHeader().setHighlightSections(False)
         self.table.verticalHeader().setDefaultSectionSize(30)
 
         self.prev_btn = QPushButton("‹ Previous")
         self.next_btn = QPushButton("Next ›")
         self.page_lbl = QLabel("Page 1")
-        self.page_lbl.setObjectName("pageLabel")
+        self.page_lbl.setStyleSheet("color: #52606D; font-weight: 600;")
 
     def _compose_layout(self) -> None:
+        # QGroupBox padding in QSS owns the inner content inset, so the
+        # layout itself takes zero margins — otherwise the two would stack.
         inner = QVBoxLayout()
+        inner.setContentsMargins(0, 0, 0, 0)
+        inner.setSpacing(SPACING.row_spacing)
         inner.addLayout(self._build_search_row())
         inner.addWidget(self.table)
         inner.addLayout(self._build_pager_row())
@@ -61,7 +67,7 @@ class RecordListView(QWidget):
 
     def _build_search_row(self) -> QHBoxLayout:
         row = QHBoxLayout()
-        row.setSpacing(8)
+        row.setSpacing(SPACING.button_spacing)
         row.addWidget(self.search_input, stretch=1)
         row.addWidget(self.search_btn)
         row.addWidget(self.show_all_btn)
@@ -69,7 +75,7 @@ class RecordListView(QWidget):
 
     def _build_pager_row(self) -> QHBoxLayout:
         row = QHBoxLayout()
-        row.setSpacing(8)
+        row.setSpacing(SPACING.button_spacing)
         row.addWidget(self.prev_btn)
         row.addStretch()
         row.addWidget(self.page_lbl, alignment=Qt.AlignCenter)
@@ -84,7 +90,9 @@ class RecordListView(QWidget):
         self.table.setRowCount(len(rows))
         for r, row in enumerate(rows):
             for c, col in enumerate(self._columns):
-                self.table.setItem(r, c, QTableWidgetItem(str(row.get(col, ""))))
+                item = QTableWidgetItem(str(row.get(col, "")))
+                item.setTextAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+                self.table.setItem(r, c, item)
 
     def set_page_label(self, current: int, total: int) -> None:
         self.page_lbl.setText(f"Page {current} of {total}")
