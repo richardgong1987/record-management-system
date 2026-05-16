@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from gui.styles import search_icon
+from gui.styles import SPACING, search_icon
 
 
 class RecordListView(QWidget):
@@ -49,9 +49,11 @@ class RecordListView(QWidget):
         self.page_lbl.setStyleSheet("color: #52606D; font-weight: 600;")
 
     def _compose_layout(self) -> None:
+        # QGroupBox padding in QSS owns the inner content inset, so the
+        # layout itself takes zero margins — otherwise the two would stack.
         inner = QVBoxLayout()
-        inner.setContentsMargins(8, 4, 8, 8)
-        inner.setSpacing(10)
+        inner.setContentsMargins(0, 0, 0, 0)
+        inner.setSpacing(SPACING.row_spacing)
         inner.addLayout(self._build_search_row())
         inner.addWidget(self.table)
         inner.addLayout(self._build_pager_row())
@@ -65,7 +67,7 @@ class RecordListView(QWidget):
 
     def _build_search_row(self) -> QHBoxLayout:
         row = QHBoxLayout()
-        row.setSpacing(8)
+        row.setSpacing(SPACING.button_spacing)
         row.addWidget(self.search_input, stretch=1)
         row.addWidget(self.search_btn)
         row.addWidget(self.show_all_btn)
@@ -73,7 +75,7 @@ class RecordListView(QWidget):
 
     def _build_pager_row(self) -> QHBoxLayout:
         row = QHBoxLayout()
-        row.setSpacing(8)
+        row.setSpacing(SPACING.button_spacing)
         row.addWidget(self.prev_btn)
         row.addStretch()
         row.addWidget(self.page_lbl, alignment=Qt.AlignCenter)

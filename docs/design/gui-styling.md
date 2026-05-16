@@ -50,7 +50,31 @@ flowchart TD
 | `gui.common.base_form_view.BaseFormView` | Right-align labels, add row spacing, equalise CRUD button widths, mark "Create" as primary via object name. | unchanged           | unchanged public API.                                                                            |
 | `gui.status_bar.view.StatusBarView`   | Show a friendly relative path (project root + below) instead of the absolute path.                      | `Path`                 | unchanged public API.                                                                            |
 
-## 4.1 Color and typography decisions
+## 4.1 Spacing tokens
+
+All layout spacing is centralised in a single `Spacing` dataclass exported by `gui.styles` as the immutable `SPACING` instance. The QSS string is built via an f-string against `SPACING`, and view modules use the same tokens in `setContentsMargins` / `setSpacing` calls — so the same magic number never appears twice across QSS and Python layouts.
+
+| Token                  | Used in QSS                                              | Used in Python layouts                                       |
+| ---------------------- | -------------------------------------------------------- | ------------------------------------------------------------ |
+| `panel_margin_top`     | `QGroupBox { margin-top: … }` — title slot               | —                                                            |
+| `panel_padding_top`    | `QGroupBox { padding-top: … }` — gap from border to row 1| —                                                            |
+| `panel_padding_side`   | `QGroupBox { padding-left/right: … }`                    | —                                                            |
+| `panel_padding_bottom` | `QGroupBox { padding-bottom: … }`                        | —                                                            |
+| `title_left`           | `QGroupBox::title { left: … }`                           | —                                                            |
+| `title_h_padding`      | `QGroupBox::title { padding: _ Xpx }` — title L/R inset  | —                                                            |
+| `title_v_padding`      | `QGroupBox::title { padding: Xpx _ }` — title T/B inset  | —                                                            |
+| `row_spacing`          | —                                                        | `setSpacing` on outer form `QVBoxLayout` and record-list inner |
+| `field_v_spacing`      | —                                                        | `QFormLayout.setVerticalSpacing`                              |
+| `field_h_spacing`      | —                                                        | `QFormLayout.setHorizontalSpacing`                            |
+| `button_spacing`       | —                                                        | CRUD button row + record-list search / pager rows             |
+| `button_min_width`     | —                                                        | `setMinimumWidth` on CRUD buttons                              |
+| `tab_outer_margin`     | —                                                        | `TabView` left / right / bottom margins                      |
+| `tab_top_padding`      | —                                                        | `TabView` top margin — gap between tab bar and content       |
+| `tab_outer_spacing`    | —                                                        | `TabView` gap between form and record list                    |
+
+Panel padding is owned entirely by QSS via the `QGroupBox` `padding` rule; the inner form / record-list layouts therefore set `contentsMargins(0, 0, 0, 0)` to avoid stacking inset on top of inset. The combination of `panel_margin_top` (22 px) + `panel_padding_top` (18 px) gives the title its own slot above the border and pushes the first form row clearly below it, while `title_h_padding` (12 px) keeps the title text from feeling squeezed inside its white background patch.
+
+## 4.2 Color and typography decisions
 
 | Token            | Value     | Used for                                                             |
 | ---------------- | --------- | -------------------------------------------------------------------- |
@@ -67,7 +91,7 @@ Font stack: `"Segoe UI", "SF Pro Text", "Helvetica Neue", Arial, sans-serif` at 
 
 Corner radius: 4px on inputs/buttons, 8px on group boxes.
 
-## 4.2 Responsive sizing rule
+## 4.3 Responsive sizing rule
 
 ```
 available  = screen.availableGeometry()
