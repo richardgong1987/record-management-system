@@ -1,0 +1,20 @@
+{
+  "app": {
+    "name": "Record Management System",
+    "icon_path": "icons/favorite.png"
+  },
+  "data": {
+    "record_file": "data/record.jsonl"
+  },
+  "window": {
+    "preferred_width_ratio": 0.85,
+    "preferred_height_ratio": 0.80,
+    "max_width": 1600,
+    "max_height": 1000,
+    "min_width": 960,
+    "min_height": 620,
+    "fallback_width": 1200,
+    "fallback_height": 720,
+    "screen_padding": 40
+  }
+}

@@ -1,9 +1,18 @@
 from dataclasses import dataclass
-from pathlib import Path
 
-from PySide6.QtCore import QRect
-from PySide6.QtWidgets import QMainWindow, QTabWidget, QWidget, QApplication
+from PySide6.QtCore import QRect, Qt
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
+from conf.loader import load_config
 from record import (
     RecordValidationError,
     check_unique_id,
@@ -28,21 +37,14 @@ from gui.tab.controller import TabController
 from gui.tab.view import TabView
 from shared.utils.pagination import Page, paginate
 
-APP_ROOT = Path(__file__).resolve().parents[1]
-DATA_FILE_PATH = APP_ROOT / "data" / "record.jsonl"
-
-# Window sizing tuned against the mockup at typical monitor sizes; the
-# exact values are clamped against the actual screen in
-# _apply_responsive_size so small laptop screens still fit.
-_PREFERRED_WIDTH_RATIO = 0.85
-_PREFERRED_HEIGHT_RATIO = 0.80
-_MAX_WIDTH = 1600
-_MAX_HEIGHT = 1000
-_TARGET_MIN_WIDTH = 960
-_TARGET_MIN_HEIGHT = 620
-_FALLBACK_WIDTH = 1200
-_FALLBACK_HEIGHT = 720
-_SCREEN_PADDING = 40
+# Configuration is read once at module import. Tests that need different
+# paths still monkeypatch the module-level constants below.
+_CONFIG = load_config()
+APP_TITLE = _CONFIG.name
+APP_ICON_PATH = _CONFIG.icon_path
+DATA_FILE_PATH = _CONFIG.record_file
+_WINDOW = _CONFIG.window
+_HEADER_ICON_PX = 22
 
 # Per record type: (form view class, form controller class, table columns).
 # Add a new key to introduce a new tab — the rest is wired automatically.
@@ -78,7 +80,10 @@ class MainWindow(QMainWindow):
         # 4. Wire each tab controller's signals to status-bar feedback
         super().__init__()
 
-        self.setWindowTitle("Record Management System")
+        # Title is rendered in the in-window header strip, so the OS title bar
+        # stays blank. Cmd-Tab / taskbar labelling still uses the application
+        # name set via QApplication.setApplicationName in main.py.
+        self.setWindowTitle("")
         self._apply_responsive_size()
         self._records = load_records(DATA_FILE_PATH)
         self._page_by_type: dict[str, int] = {rt: 1 for rt in _RECORD_TYPES}
@@ -111,20 +116,20 @@ class MainWindow(QMainWindow):
     def _apply_responsive_size(self) -> None:
         geometry = self._available_geometry()
         if geometry is None:
-            self.resize(_FALLBACK_WIDTH, _FALLBACK_HEIGHT)
+            self.resize(_WINDOW.fallback_width, _WINDOW.fallback_height)
             return
         width = max(
-            _TARGET_MIN_WIDTH,
-            min(int(geometry.width() * _PREFERRED_WIDTH_RATIO), _MAX_WIDTH),
+            _WINDOW.min_width,
+            min(int(geometry.width() * _WINDOW.preferred_width_ratio), _WINDOW.max_width),
         )
         height = max(
-            _TARGET_MIN_HEIGHT,
-            min(int(geometry.height() * _PREFERRED_HEIGHT_RATIO), _MAX_HEIGHT),
+            _WINDOW.min_height,
+            min(int(geometry.height() * _WINDOW.preferred_height_ratio), _WINDOW.max_height),
         )
         self.resize(width, height)
         self.setMinimumSize(
-            min(_TARGET_MIN_WIDTH, geometry.width() - _SCREEN_PADDING),
-            min(_TARGET_MIN_HEIGHT, geometry.height() - _SCREEN_PADDING),
+            min(_WINDOW.min_width, geometry.width() - _WINDOW.screen_padding),
+            min(_WINDOW.min_height, geometry.height() - _WINDOW.screen_padding),
         )
         frame = self.frameGeometry()
         frame.moveCenter(geometry.center())
@@ -153,7 +158,35 @@ class MainWindow(QMainWindow):
         tabs = QTabWidget()
         for tab in self._tabs:
             tabs.addTab(tab.view, tab.label)
-        return tabs
+
+        container = QWidget()
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(self._build_header())
+        layout.addWidget(tabs, stretch=1)
+        return container
+
+    def _build_header(self) -> QWidget:
+        header = QWidget()
+        header.setObjectName("appHeader")
+        layout = QHBoxLayout(header)
+        layout.setContentsMargins(14, 6, 14, 6)
+        layout.setSpacing(8)
+        layout.addWidget(self._build_logo(), alignment=Qt.AlignVCenter)
+        title = QLabel(APP_TITLE)
+        title.setObjectName("appTitle")
+        layout.addWidget(title, alignment=Qt.AlignVCenter)
+        layout.addStretch()
+        return header
+
+    def _build_logo(self) -> QLabel:
+        logo = QLabel()
+        logo.setObjectName("appLogo")
+        pixmap = QIcon(str(APP_ICON_PATH)).pixmap(_HEADER_ICON_PX, _HEADER_ICON_PX)
+        logo.setPixmap(pixmap)
+        logo.setFixedSize(_HEADER_ICON_PX, _HEADER_ICON_PX)
+        return logo
 
     def _connect_tab_signals(self, ctrl: TabController) -> None:
         ctrl.create_requested.connect(self._on_create)

@@ -17,6 +17,20 @@ QMainWindow, QDialog {
     background-color: #ECEEF1;
 }
 
+QWidget#appHeader {
+    background: #FFFFFF;
+    border-bottom: 1px solid #D8DBE0;
+}
+QLabel#appLogo {
+    background: transparent;
+}
+QLabel#appTitle {
+    color: #1F2933;
+    font-size: 13pt;
+    font-weight: 600;
+    background: transparent;
+}
+
 QTabWidget::pane {
     border: 1px solid #D8DBE0;
     background: #FFFFFF;
