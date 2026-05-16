@@ -31,6 +31,7 @@ class Spacing:
     tab_outer_margin: int = 12       # tab page left/right/bottom margin
     tab_top_padding: int = 15        # tab page top margin — gap from tab bar to content
     tab_outer_spacing: int = 12      # gap between form panel and record list
+    header_to_tabs_gap: int = 15     # vertical gap between the app header and the tab bar
 
 
 SPACING = Spacing()

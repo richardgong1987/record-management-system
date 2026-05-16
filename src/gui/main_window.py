@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 )
 
 from conf.loader import load_config
+from gui.styles import SPACING
 from record import (
     RecordValidationError,
     check_unique_id,
@@ -164,6 +165,9 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         layout.addWidget(self._build_header())
+        # Give the tab bar room to breathe below the header — without this
+        # the QTabWidget tabs sit flush against the header's bottom border.
+        layout.addSpacing(SPACING.header_to_tabs_gap)
         layout.addWidget(tabs, stretch=1)
         return container
 

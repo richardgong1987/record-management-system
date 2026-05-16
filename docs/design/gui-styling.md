@@ -71,6 +71,7 @@ All layout spacing is centralised in a single `Spacing` dataclass exported by `g
 | `tab_outer_margin`     | —                                                        | `TabView` left / right / bottom margins                      |
 | `tab_top_padding`      | —                                                        | `TabView` top margin — gap between tab bar and content       |
 | `tab_outer_spacing`    | —                                                        | `TabView` gap between form and record list                    |
+| `header_to_tabs_gap`   | —                                                        | `MainWindow._compose_central` — gap between app header and tab bar |
 
 Panel padding is owned entirely by QSS via the `QGroupBox` `padding` rule; the inner form / record-list layouts therefore set `contentsMargins(0, 0, 0, 0)` to avoid stacking inset on top of inset. The combination of `panel_margin_top` (22 px) + `panel_padding_top` (18 px) gives the title its own slot above the border and pushes the first form row clearly below it, while `title_h_padding` (12 px) keeps the title text from feeling squeezed inside its white background patch.
 
