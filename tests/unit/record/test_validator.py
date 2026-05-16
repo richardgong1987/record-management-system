@@ -72,9 +72,7 @@ def test_check_flight_date_accepts(record: dict) -> None:
 @pytest.mark.parametrize(
     "record",
     [
-        pytest.param(
-            {"Type": "Flight", "Date": "not-a-date"}, id="malformed-string"
-        ),
+        pytest.param({"Type": "Flight", "Date": "not-a-date"}, id="malformed-string"),
         pytest.param({"Type": "Flight", "Date": ""}, id="empty-string"),
         # Direct callers may pass None instead of empty string; the validator
         # must surface the same ISO-format error rather than a TypeError.

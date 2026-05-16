@@ -16,6 +16,18 @@ python src/main.py
 
 For full setup, testing, and packaging instructions, see the [Project background → Getting started](docs/project-background.md#getting-started).
 
+## Download a release
+
+Pre-built bundles are published to the [Releases page](https://github.com/richardgong1987/record-management-system/releases) — pick the archive for your OS:
+
+- `RecordManagementSystem-windows-x86_64.zip` — unzip, run `RecordManagementSystem.exe` from the folder.
+- `RecordManagementSystem-macos.zip` — unzip and double-click `RecordManagementSystem.app`. First launch: right-click → Open (Gatekeeper warning for unsigned apps).
+- `RecordManagementSystem-linux-x86_64.tar.gz` — `tar -xzf` and run `RecordManagementSystem/RecordManagementSystem`.
+
+Records are saved to `~/RecordManagementSystem/record.jsonl` so they survive reinstalls.
+
+Releases are produced automatically by [`.github/workflows/release.yml`](.github/workflows/release.yml) on every `v*` tag push (or via manual dispatch). Build details live in [`docs/design/packaging-and-release.md`](docs/design/packaging-and-release.md).
+
 ## Code style — run before pushing
 
 Every commit you push runs through CI ([`.github/workflows/lint.yml`](.github/workflows/lint.yml)), which fails the build if either tool reports a problem. To save round-trips, run them locally first:
@@ -51,6 +63,7 @@ This README is an index. The documents below live under [docs/](docs/).
 - [Git commit conventions](docs/contributing/commit-conventions.md) — commit message format the team follows for every commit.
 - [GUI walkthrough](docs/contributing/gui-walkthrough.md) — a tour through `src/gui/` for anyone picking up the code: what each folder does, how a click flows through the app, and where to look when you want to change something.
 - [Unit testing standards](docs/contributing/testing-standards.md) — how to write tests for this project: default to `@pytest.mark.parametrize`, house style, repeating patterns, and a pre-PR checklist.
+- [Releasing](docs/contributing/releasing.md) — how to cut a release: versioning, pre-release checklist, tagging, manual test builds via `workflow_dispatch`, what to do if a build fails.
 - _Planned:_ Coding standards
 
 ### Design
@@ -60,6 +73,7 @@ This README is an index. The documents below live under [docs/](docs/).
 - [Update record](docs/design/update-record.md) — design and tour for the update-record flow: row click → form populate → validate → in-place replace → atomic write.
 - [Delete record](docs/design/delete-record.md) — design and tour for the delete-record flow: row click → Delete button → confirm dialog → atomic write of the survivor list.
 - [Clear all records](docs/design/clear-all-records.md) — design and tour for the Clear button: per-tab bulk delete of every record of the active type, with confirmation.
+- [Packaging & release](docs/design/packaging-and-release.md) — how the matrix CI build produces `.app` / `.exe` / Linux bundles and uploads them to GitHub Releases.
 - _Planned:_ Search & display records
 - _Planned:_ Architecture overview
 - _Planned:_ Directory structure explainer

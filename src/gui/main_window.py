@@ -1,8 +1,18 @@
-from dataclasses import dataclass
-from pathlib import Path
+from PySide6.QtWidgets import (
+    QMainWindow,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
-from PySide6.QtWidgets import QMainWindow, QTabWidget, QWidget
-
+from conf.loader import load_config
+from gui.common.dialogs import confirm
+from gui.header.view import AppHeaderView
+from gui.status_bar.view import StatusBarView
+from gui.styles import SPACING
+from gui.tab.controller import TabController
+from gui.tab_registry import RECORD_TYPES, Tab, build_tab
+from gui.window_sizing import apply_responsive_size
 from record import (
     RecordValidationError,
     check_unique_id,
@@ -10,49 +20,15 @@ from record import (
     load_records,
     save_records,
 )
-from gui.airline.controller import AirlineFormController
-from gui.common.dialogs import confirm
-from gui.airline.types import AIRLINE_TEXT_FIELDS
-from gui.airline.view import AirlineFormView
-from gui.client.controller import ClientFormController
-from gui.client.types import CLIENT_TEXT_FIELDS
-from gui.client.view import ClientFormView
-from gui.flight.controller import FlightFormController
-from gui.flight.types import FLIGHT_TEXT_FIELDS
-from gui.flight.view import FlightFormView
-from gui.record_list.controller import RecordListController
-from gui.record_list.view import RecordListView
-from gui.status_bar.view import StatusBarView
-from gui.tab.controller import TabController
-from gui.tab.view import TabView
 from shared.utils.pagination import Page, paginate
 
-APP_ROOT = Path(__file__).resolve().parents[1]
-DATA_FILE_PATH = APP_ROOT / "data" / "record.jsonl"
-
-# Per record type: (form view class, form controller class, table columns).
-# Add a new key to introduce a new tab — the rest is wired automatically.
-_RECORD_TYPES = {
-    "Client": (
-        ClientFormView,
-        ClientFormController,
-        CLIENT_TEXT_FIELDS,
-    ),
-    "Airline": (
-        AirlineFormView,
-        AirlineFormController,
-        AIRLINE_TEXT_FIELDS,
-    ),
-    "Flight": (FlightFormView, FlightFormController, FLIGHT_TEXT_FIELDS),
-}
-
-
-@dataclass
-class _Tab:
-    record_type: str
-    label: str
-    view: TabView
-    controller: TabController
+# Configuration is read once at module import. Tests that need different
+# paths still monkeypatch the module-level constants below.
+_CONFIG = load_config()
+APP_TITLE = _CONFIG.name
+APP_ICON_PATH = _CONFIG.icon_path
+DATA_FILE_PATH = _CONFIG.record_file
+_WINDOW = _CONFIG.window
 
 
 class MainWindow(QMainWindow):
@@ -63,22 +39,25 @@ class MainWindow(QMainWindow):
         # 3. Mount the two-cell status bar with the data-file path
         # 4. Wire each tab controller's signals to status-bar feedback
         super().__init__()
-        self.setWindowTitle("Record Management System")
-        self.resize(1400, 700)
-        self.setMinimumSize(1000, 600)
+
+        # Title is rendered in the in-window header strip, so the OS title bar
+        # stays blank. Cmd-Tab / taskbar labelling still uses the application
+        # name set via QApplication.setApplicationName in main.py.
+        self.setWindowTitle("")
+        apply_responsive_size(self, _WINDOW)
         self._records = load_records(DATA_FILE_PATH)
-        self._page_by_type: dict[str, int] = {rt: 1 for rt in _RECORD_TYPES}
+        self._page_by_type: dict[str, int] = {rt: 1 for rt in RECORD_TYPES}
         # The record dict currently selected in each tab. Storing the
         # reference (not an absolute index) keeps selection stable across
         # list rewrites in other tabs and is identity-safe when two records
         # have identical field values (e.g. duplicate Flights).
         self._selected_record_by_type: dict[str, dict | None] = {
-            rt: None for rt in _RECORD_TYPES
+            rt: None for rt in RECORD_TYPES
         }
 
         # Step 1: Build tabs
-        self._tabs: list[_Tab] = [self._build_tab(rt) for rt in _RECORD_TYPES]
-        self._tabs_by_type: dict[str, _Tab] = {t.record_type: t for t in self._tabs}
+        self._tabs: list[Tab] = [build_tab(rt) for rt in RECORD_TYPES]
+        self._tabs_by_type: dict[str, Tab] = {t.record_type: t for t in self._tabs}
 
         # Step 2: Compose central QTabWidget
         self.setCentralWidget(self._compose_central())
@@ -94,26 +73,21 @@ class MainWindow(QMainWindow):
 
         self._refresh_all_tables()
 
-    def _build_tab(self, record_type: str) -> _Tab:
-        form_cls, ctrl_cls, columns = _RECORD_TYPES[record_type]
-        form = form_cls()
-        form_ctrl = ctrl_cls(form)
-        record_list = RecordListView(columns)
-        list_ctrl = RecordListController(record_list)
-        view = TabView(form, record_list)
-        controller = TabController(form_ctrl, list_ctrl, record_type)
-        return _Tab(
-            record_type=record_type,
-            label=f"{record_type} Records",
-            view=view,
-            controller=controller,
-        )
-
     def _compose_central(self) -> QWidget:
         tabs = QTabWidget()
         for tab in self._tabs:
             tabs.addTab(tab.view, tab.label)
-        return tabs
+
+        container = QWidget()
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(AppHeaderView(APP_TITLE, APP_ICON_PATH))
+        # Give the tab bar room to breathe below the header — without this
+        # the QTabWidget tabs sit flush against the header's bottom border.
+        layout.addSpacing(SPACING.header_to_tabs_gap)
+        layout.addWidget(tabs, stretch=1)
+        return container
 
     def _connect_tab_signals(self, ctrl: TabController) -> None:
         ctrl.create_requested.connect(self._on_create)
@@ -284,7 +258,7 @@ class MainWindow(QMainWindow):
         for tab in self._tabs:
             self._refresh_tab(tab)
 
-    def _refresh_tab(self, tab: _Tab) -> None:
+    def _refresh_tab(self, tab: Tab) -> None:
         self._paint(tab, self._visible_page(tab.record_type))
 
     def _visible_page(self, record_type: str) -> Page:
@@ -293,6 +267,6 @@ class MainWindow(QMainWindow):
         self._page_by_type[record_type] = page.current_page
         return page
 
-    def _paint(self, tab: _Tab, page: Page) -> None:
+    def _paint(self, tab: Tab, page: Page) -> None:
         tab.view.record_list.set_rows(page.rows)
         tab.view.record_list.set_page_label(page.current_page, page.total_pages)
