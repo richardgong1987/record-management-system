@@ -45,7 +45,7 @@ QWidget {{
     color: #1F2933;
     background-color: #ECEEF1;
     font-family: "Segoe UI", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-    font-size: 11pt;
+    font-size: 12pt;
 }}
 
 QMainWindow, QDialog {{
@@ -61,7 +61,7 @@ QLabel#appLogo {{
 }}
 QLabel#appTitle {{
     color: #1F2933;
-    font-size: 13pt;
+    font-size: 20pt;
     font-weight: 600;
     background: transparent;
 }}
@@ -72,7 +72,7 @@ QTabWidget::pane {{
     top: -1px;
 }}
 QTabWidget::tab-bar {{
-    left: 8px;
+    left: 10px;
 }}
 QTabBar::tab {{
     background: #ECEEF1;
@@ -81,8 +81,8 @@ QTabBar::tab {{
     border-bottom: none;
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
-    padding: 7px 18px;
-    margin-right: 2px;
+    padding: 10px 18px;
+    font-size: 18pt;
     min-width: 110px;
 }}
 QTabBar::tab:hover:!selected {{
@@ -102,7 +102,7 @@ QGroupBox {{
     border-radius: 8px;
     margin-top: {SPACING.panel_margin_top}px;
     padding: {SPACING.panel_padding_top}px {SPACING.panel_padding_side}px {SPACING.panel_padding_bottom}px {SPACING.panel_padding_side}px;
-    font-size: 12pt;
+    font-size: 16pt;
     font-weight: 600;
     color: #1F2933;
 }}
@@ -113,6 +113,7 @@ QGroupBox::title {{
     padding: {SPACING.title_v_padding}px {SPACING.title_h_padding}px;
     background-color: #FFFFFF;
     color: #1F2933;
+    font-size: 16pt;
     font-weight: 600;
 }}
 
