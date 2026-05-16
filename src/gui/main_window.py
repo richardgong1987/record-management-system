@@ -30,6 +30,7 @@ APP_ICON_PATH = _CONFIG.icon_path
 DATA_FILE_PATH = _CONFIG.record_file
 _WINDOW = _CONFIG.window
 
+
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         # Flow:
