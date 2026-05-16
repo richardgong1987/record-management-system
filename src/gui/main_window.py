@@ -9,6 +9,7 @@ from record import (
     create_record,
     load_records,
     save_records,
+    search_records,
 )
 from gui.common.dialogs import confirm
 from gui.record_list.controller import RecordListController
@@ -44,6 +45,8 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(1000, 600)
         self._records = load_records(DATA_FILE_PATH)
         self._page_by_type: dict[str, int] = {rt: 1 for rt in RECORD_TYPES}
+        # Latched on Search click, not on keystroke; empty string disables the filter.
+        self._query_by_type: dict[str, str] = {rt: "" for rt in RECORD_TYPES}
         # The record dict currently selected in each tab. Storing the
         # reference (not an absolute index) keeps selection stable across
         # list rewrites in other tabs and is identity-safe when two records
@@ -244,10 +247,21 @@ class MainWindow(QMainWindow):
         self.status.set_status(f"Cleared all {record_type} records.")
 
     def _on_search(self, record_type: str, query: str) -> None:
-        self.status.set_status(f"Search {record_type}: {query!r}")
+        self._query_by_type[record_type] = query
+        self._page_by_type[record_type] = 1
+        self._refresh_tab(self._tabs_by_type[record_type])
+        matches = len(search_records(self._records, record_type, query))
+        self.status.set_status(
+            f"Search {record_type}: {query!r} — {matches} match(es)."
+        )
 
     def _on_show_all(self, record_type: str) -> None:
-        self.status.set_status(f"Show all {record_type}")
+        self._query_by_type[record_type] = ""
+        self._page_by_type[record_type] = 1
+        # Keep the visible search box in sync with the (cleared) query state.
+        self._tabs_by_type[record_type].view.record_list.search_input.clear()
+        self._refresh_tab(self._tabs_by_type[record_type])
+        self.status.set_status(f"Show all {record_type}.")
 
     def _step_page(self, record_type: str, delta: int) -> None:
         self._page_by_type[record_type] += delta
@@ -264,7 +278,9 @@ class MainWindow(QMainWindow):
         self._paint(tab, self._visible_page(tab.record_type))
 
     def _visible_page(self, record_type: str) -> Page:
-        rows = self._records_for_type(record_type)
+        rows = search_records(
+            self._records, record_type, self._query_by_type[record_type]
+        )
         page = paginate(rows, self._page_by_type[record_type])
         self._page_by_type[record_type] = page.current_page
         return page
