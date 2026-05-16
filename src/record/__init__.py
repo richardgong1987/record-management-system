@@ -6,7 +6,7 @@ Public surface re-exported for convenient imports:
 """
 
 from record.repository import load_records, save_records
-from record.service import create_record
+from record.service import create_record, search_records
 from record.validator import RecordValidationError, check_unique_id
 
 __all__ = [
@@ -15,4 +15,5 @@ __all__ = [
     "create_record",
     "load_records",
     "save_records",
+    "search_records",
 ]
