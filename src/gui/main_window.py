@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from PySide6.QtWidgets import QMainWindow, QTabWidget, QWidget
+from PySide6.QtWidgets import QMainWindow, QTabWidget, QWidget, QApplication
 
 from record import (
     RecordValidationError,
@@ -63,8 +63,13 @@ class MainWindow(QMainWindow):
         # 3. Mount the two-cell status bar with the data-file path
         # 4. Wire each tab controller's signals to status-bar feedback
         super().__init__()
-        self.setWindowTitle("Record Management System")
-        self.resize(1400, 700)
+
+        screen = self.screen() or QApplication.primaryScreen()
+        available = screen.availableGeometry()
+        width = int(available.width() * 0.85)
+        height = int(available.height() * 0.80)
+        self.resize(width, height)
+
         self.setMinimumSize(1000, 600)
         self._records = load_records(DATA_FILE_PATH)
         self._page_by_type: dict[str, int] = {rt: 1 for rt in _RECORD_TYPES}
