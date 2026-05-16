@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+from PySide6.QtCore import QRect
 from PySide6.QtWidgets import QMainWindow, QTabWidget, QWidget, QApplication
 
 from record import (
@@ -29,6 +30,19 @@ from shared.utils.pagination import Page, paginate
 
 APP_ROOT = Path(__file__).resolve().parents[1]
 DATA_FILE_PATH = APP_ROOT / "data" / "record.jsonl"
+
+# Window sizing tuned against the mockup at typical monitor sizes; the
+# exact values are clamped against the actual screen in
+# _apply_responsive_size so small laptop screens still fit.
+_PREFERRED_WIDTH_RATIO = 0.85
+_PREFERRED_HEIGHT_RATIO = 0.80
+_MAX_WIDTH = 1600
+_MAX_HEIGHT = 1000
+_TARGET_MIN_WIDTH = 960
+_TARGET_MIN_HEIGHT = 620
+_FALLBACK_WIDTH = 1200
+_FALLBACK_HEIGHT = 720
+_SCREEN_PADDING = 40
 
 # Per record type: (form view class, form controller class, table columns).
 # Add a new key to introduce a new tab — the rest is wired automatically.
@@ -64,13 +78,8 @@ class MainWindow(QMainWindow):
         # 4. Wire each tab controller's signals to status-bar feedback
         super().__init__()
 
-        screen = self.screen() or QApplication.primaryScreen()
-        available = screen.availableGeometry()
-        width = int(available.width() * 0.85)
-        height = int(available.height() * 0.80)
-        self.resize(width, height)
-
-        self.setMinimumSize(1000, 600)
+        self.setWindowTitle("Record Management System")
+        self._apply_responsive_size()
         self._records = load_records(DATA_FILE_PATH)
         self._page_by_type: dict[str, int] = {rt: 1 for rt in _RECORD_TYPES}
         # The record dict currently selected in each tab. Storing the
@@ -98,6 +107,32 @@ class MainWindow(QMainWindow):
             self._connect_tab_signals(tab.controller)
 
         self._refresh_all_tables()
+
+    def _apply_responsive_size(self) -> None:
+        geometry = self._available_geometry()
+        if geometry is None:
+            self.resize(_FALLBACK_WIDTH, _FALLBACK_HEIGHT)
+            return
+        width = max(
+            _TARGET_MIN_WIDTH,
+            min(int(geometry.width() * _PREFERRED_WIDTH_RATIO), _MAX_WIDTH),
+        )
+        height = max(
+            _TARGET_MIN_HEIGHT,
+            min(int(geometry.height() * _PREFERRED_HEIGHT_RATIO), _MAX_HEIGHT),
+        )
+        self.resize(width, height)
+        self.setMinimumSize(
+            min(_TARGET_MIN_WIDTH, geometry.width() - _SCREEN_PADDING),
+            min(_TARGET_MIN_HEIGHT, geometry.height() - _SCREEN_PADDING),
+        )
+        frame = self.frameGeometry()
+        frame.moveCenter(geometry.center())
+        self.move(frame.topLeft())
+
+    def _available_geometry(self) -> QRect | None:
+        screen = self.screen() or QApplication.primaryScreen()
+        return screen.availableGeometry() if screen else None
 
     def _build_tab(self, record_type: str) -> _Tab:
         form_cls, ctrl_cls, columns = _RECORD_TYPES[record_type]

@@ -10,6 +10,7 @@ class TabView(QWidget):
         self.record_list = record_list
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(12)
         layout.addWidget(form, stretch=1)
         layout.addWidget(record_list, stretch=2)

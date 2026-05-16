@@ -1,13 +1,16 @@
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QGroupBox,
-    QFormLayout,
-    QLineEdit,
     QComboBox,
+    QFormLayout,
+    QGroupBox,
     QHBoxLayout,
+    QLineEdit,
     QPushButton,
+    QVBoxLayout,
+    QWidget,
 )
+
+_BUTTON_MIN_WIDTH = 84
 
 
 class BaseFormView(QWidget):
@@ -18,14 +21,21 @@ class BaseFormView(QWidget):
         self.form_inputs: dict[str, QWidget] = {}
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
         layout.addWidget(self._build_form_group())
         layout.addLayout(self._build_crud_row())
+        layout.addStretch()
 
     def setup_extra_fields(self, form: QFormLayout) -> None:
         pass
 
     def _build_form_group(self) -> QGroupBox:
         form = QFormLayout()
+        form.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        form.setFormAlignment(Qt.AlignTop | Qt.AlignLeft)
+        form.setHorizontalSpacing(10)
+        form.setVerticalSpacing(8)
+        form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
         for field in self.text_fields:
             line_edit = QLineEdit()
             if field == "Date":
@@ -41,17 +51,20 @@ class BaseFormView(QWidget):
 
     def _build_crud_row(self) -> QHBoxLayout:
         self.create_btn = QPushButton("Create")
+        self.create_btn.setObjectName("primary")
         self.update_btn = QPushButton("Update")
         self.delete_btn = QPushButton("Delete")
         self.clear_btn = QPushButton("Clear")
 
         row = QHBoxLayout()
+        row.setSpacing(8)
         for button in (
             self.create_btn,
             self.update_btn,
             self.delete_btn,
             self.clear_btn,
         ):
+            button.setMinimumWidth(_BUTTON_MIN_WIDTH)
             row.addWidget(button)
         row.addStretch()
         return row
