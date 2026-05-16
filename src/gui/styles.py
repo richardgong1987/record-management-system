@@ -16,26 +16,25 @@ class Spacing:
     therefore zero their own contentsMargins to avoid stacking with QSS.
     """
 
-    panel_margin_top: int = 22       # QGroupBox margin-top — slot for title
-    panel_padding_top: int = 18      # QGroupBox padding-top — gap from border to first row
-    panel_padding_side: int = 14     # QGroupBox padding left/right
-    panel_padding_bottom: int = 14   # QGroupBox padding-bottom
-    title_left: int = 16             # title horizontal offset from panel edge
-    title_h_padding: int = 12        # horizontal padding inside title label
-    title_v_padding: int = 4         # vertical padding inside title label
-    row_spacing: int = 12            # vertical gap between rows inside a panel
-    field_v_spacing: int = 10        # vertical gap between form rows
-    field_h_spacing: int = 12        # horizontal gap between label and field
-    button_spacing: int = 8          # gap between CRUD buttons
-    button_min_width: int = 84       # minimum CRUD button width
-    tab_outer_margin: int = 12       # tab page left/right/bottom margin
-    tab_top_padding: int = 15        # tab page top margin — gap from tab bar to content
-    tab_outer_spacing: int = 12      # gap between form panel and record list
-    header_to_tabs_gap: int = 15     # vertical gap between the app header and the tab bar
+    panel_margin_top: int = 22  # QGroupBox margin-top — slot for title
+    panel_padding_top: int = 18  # QGroupBox padding-top — gap from border to first row
+    panel_padding_side: int = 14  # QGroupBox padding left/right
+    panel_padding_bottom: int = 14  # QGroupBox padding-bottom
+    title_left: int = 16  # title horizontal offset from panel edge
+    title_h_padding: int = 12  # horizontal padding inside title label
+    title_v_padding: int = 4  # vertical padding inside title label
+    row_spacing: int = 12  # vertical gap between rows inside a panel
+    field_v_spacing: int = 10  # vertical gap between form rows
+    field_h_spacing: int = 12  # horizontal gap between label and field
+    button_spacing: int = 8  # gap between CRUD buttons
+    button_min_width: int = 84  # minimum CRUD button width
+    tab_outer_margin: int = 12  # tab page left/right/bottom margin
+    tab_top_padding: int = 15  # tab page top margin — gap from tab bar to content
+    tab_outer_spacing: int = 12  # gap between form panel and record list
+    header_to_tabs_gap: int = 15  # vertical gap between the app header and the tab bar
 
 
 SPACING = Spacing()
-
 
 # Global stylesheet that drags Qt's default look toward the agreed mockup
 # (see docs/design/option3.png). Spacing values come from SPACING so the same

@@ -27,8 +27,6 @@ def _client_payload(id_value: str, name: str = "Alice") -> dict:
     }
 
 
-
-
 @pytest.mark.parametrize(
     "rows,clicks,expected_emissions",
     [

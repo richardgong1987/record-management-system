@@ -121,11 +121,16 @@ class MainWindow(QMainWindow):
             return
         width = max(
             _WINDOW.min_width,
-            min(int(geometry.width() * _WINDOW.preferred_width_ratio), _WINDOW.max_width),
+            min(
+                int(geometry.width() * _WINDOW.preferred_width_ratio), _WINDOW.max_width
+            ),
         )
         height = max(
             _WINDOW.min_height,
-            min(int(geometry.height() * _WINDOW.preferred_height_ratio), _WINDOW.max_height),
+            min(
+                int(geometry.height() * _WINDOW.preferred_height_ratio),
+                _WINDOW.max_height,
+            ),
         )
         self.resize(width, height)
         self.setMinimumSize(
