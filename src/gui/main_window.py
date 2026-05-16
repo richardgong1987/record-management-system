@@ -10,41 +10,17 @@ from record import (
     load_records,
     save_records,
 )
-from gui.airline.controller import AirlineFormController
 from gui.common.dialogs import confirm
-from gui.airline.types import AIRLINE_TEXT_FIELDS
-from gui.airline.view import AirlineFormView
-from gui.client.controller import ClientFormController
-from gui.client.types import CLIENT_TEXT_FIELDS
-from gui.client.view import ClientFormView
-from gui.flight.controller import FlightFormController
-from gui.flight.types import FLIGHT_TEXT_FIELDS
-from gui.flight.view import FlightFormView
 from gui.record_list.controller import RecordListController
 from gui.record_list.view import RecordListView
 from gui.status_bar.view import StatusBarView
 from gui.tab.controller import TabController
+from gui.tab.registry import RECORD_TYPES
 from gui.tab.view import TabView
 from shared.utils.pagination import Page, paginate
 
 APP_ROOT = Path(__file__).resolve().parents[1]
 DATA_FILE_PATH = APP_ROOT / "data" / "record.jsonl"
-
-# Per record type: (form view class, form controller class, table columns).
-# Add a new key to introduce a new tab — the rest is wired automatically.
-_RECORD_TYPES = {
-    "Client": (
-        ClientFormView,
-        ClientFormController,
-        CLIENT_TEXT_FIELDS,
-    ),
-    "Airline": (
-        AirlineFormView,
-        AirlineFormController,
-        AIRLINE_TEXT_FIELDS,
-    ),
-    "Flight": (FlightFormView, FlightFormController, FLIGHT_TEXT_FIELDS),
-}
 
 
 @dataclass
@@ -67,17 +43,17 @@ class MainWindow(QMainWindow):
         self.resize(1400, 700)
         self.setMinimumSize(1000, 600)
         self._records = load_records(DATA_FILE_PATH)
-        self._page_by_type: dict[str, int] = {rt: 1 for rt in _RECORD_TYPES}
+        self._page_by_type: dict[str, int] = {rt: 1 for rt in RECORD_TYPES}
         # The record dict currently selected in each tab. Storing the
         # reference (not an absolute index) keeps selection stable across
         # list rewrites in other tabs and is identity-safe when two records
         # have identical field values (e.g. duplicate Flights).
         self._selected_record_by_type: dict[str, dict | None] = {
-            rt: None for rt in _RECORD_TYPES
+            rt: None for rt in RECORD_TYPES
         }
 
         # Step 1: Build tabs
-        self._tabs: list[_Tab] = [self._build_tab(rt) for rt in _RECORD_TYPES]
+        self._tabs: list[_Tab] = [self._build_tab(rt) for rt in RECORD_TYPES]
         self._tabs_by_type: dict[str, _Tab] = {t.record_type: t for t in self._tabs}
 
         # Step 2: Compose central QTabWidget
@@ -95,7 +71,7 @@ class MainWindow(QMainWindow):
         self._refresh_all_tables()
 
     def _build_tab(self, record_type: str) -> _Tab:
-        form_cls, ctrl_cls, columns = _RECORD_TYPES[record_type]
+        form_cls, ctrl_cls, columns = RECORD_TYPES[record_type]
         form = form_cls()
         form_ctrl = ctrl_cls(form)
         record_list = RecordListView(columns)
