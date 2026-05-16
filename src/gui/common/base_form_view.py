@@ -57,6 +57,7 @@ class BaseFormView(QWidget):
         self.create_btn.setObjectName("primary")
         self.update_btn = QPushButton("Update")
         self.delete_btn = QPushButton("Delete")
+        self.delete_btn.setObjectName("destructive")
         self.clear_btn = QPushButton("Clear")
 
         row = QHBoxLayout()
