@@ -63,6 +63,7 @@ This README is an index. The documents below live under [docs/](docs/).
 - [Git commit conventions](docs/contributing/commit-conventions.md) — commit message format the team follows for every commit.
 - [GUI walkthrough](docs/contributing/gui-walkthrough.md) — a tour through `src/gui/` for anyone picking up the code: what each folder does, how a click flows through the app, and where to look when you want to change something.
 - [Unit testing standards](docs/contributing/testing-standards.md) — how to write tests for this project: default to `@pytest.mark.parametrize`, house style, repeating patterns, and a pre-PR checklist.
+- [Releasing](docs/contributing/releasing.md) — how to cut a release: versioning, pre-release checklist, tagging, manual test builds via `workflow_dispatch`, what to do if a build fails.
 - _Planned:_ Coding standards
 
 ### Design
