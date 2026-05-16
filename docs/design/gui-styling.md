@@ -1,6 +1,6 @@
 # GUI Styling
 
-> Visual reference: [`option3.png`](option3.png).
+> Visual reference: ![option3.png](option3.png).
 > Scope: presentation refinement only — colors, typography, spacing, icons, and screen-aware window sizing. Widget composition, signals and intent contracts in [`gui-layout.md`](gui-layout.md) are unchanged.
 
 ## 1. Problem Description
