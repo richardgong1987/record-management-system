@@ -12,6 +12,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from gui.style import decorate_search_input
+
 
 class RecordListView(QWidget):
     def __init__(self, columns: list[str]) -> None:
@@ -22,8 +24,10 @@ class RecordListView(QWidget):
 
     def _build_widgets(self) -> None:
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("Search")
+        self.search_input.setPlaceholderText("Search records")
+        decorate_search_input(self.search_input)
         self.search_btn = QPushButton("Search")
+        self.search_btn.setObjectName("primary")
         self.show_all_btn = QPushButton("Show All")
 
         self.table = QTableWidget(0, len(self._columns))
@@ -31,11 +35,16 @@ class RecordListView(QWidget):
         self.table.verticalHeader().setVisible(False)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.table.setAlternatingRowColors(True)
+        self.table.setShowGrid(False)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.horizontalHeader().setMinimumHeight(34)
+        self.table.verticalHeader().setDefaultSectionSize(30)
 
         self.prev_btn = QPushButton("‹ Previous")
         self.next_btn = QPushButton("Next ›")
         self.page_lbl = QLabel("Page 1")
+        self.page_lbl.setObjectName("pageLabel")
 
     def _compose_layout(self) -> None:
         inner = QVBoxLayout()
@@ -52,6 +61,7 @@ class RecordListView(QWidget):
 
     def _build_search_row(self) -> QHBoxLayout:
         row = QHBoxLayout()
+        row.setSpacing(8)
         row.addWidget(self.search_input, stretch=1)
         row.addWidget(self.search_btn)
         row.addWidget(self.show_all_btn)
@@ -59,6 +69,7 @@ class RecordListView(QWidget):
 
     def _build_pager_row(self) -> QHBoxLayout:
         row = QHBoxLayout()
+        row.setSpacing(8)
         row.addWidget(self.prev_btn)
         row.addStretch()
         row.addWidget(self.page_lbl, alignment=Qt.AlignCenter)

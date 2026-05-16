@@ -6,8 +6,11 @@ from PySide6.QtWidgets import QLabel, QStatusBar
 class StatusBarView(QStatusBar):
     def __init__(self) -> None:
         super().__init__()
+        self.setSizeGripEnabled(False)
         self._status_lbl = QLabel("Status: Ready")
+        self._status_lbl.setObjectName("status")
         self._data_file_lbl = QLabel()
+        self._data_file_lbl.setObjectName("dataFile")
         self.addWidget(self._status_lbl, stretch=1)
         self.addPermanentWidget(self._data_file_lbl)
 
