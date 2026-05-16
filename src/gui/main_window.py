@@ -15,6 +15,7 @@ from gui.common.dialogs import confirm
 from gui.record_list.controller import RecordListController
 from gui.record_list.view import RecordListView
 from gui.status_bar.view import StatusBarView
+from gui.style import size_window_to_screen
 from gui.tab.controller import TabController
 from gui.tab.registry import RECORD_TYPES
 from gui.tab.view import TabView
@@ -41,8 +42,8 @@ class MainWindow(QMainWindow):
         # 4. Wire each tab controller's signals to status-bar feedback
         super().__init__()
         self.setWindowTitle("Record Management System")
-        self.resize(1400, 700)
         self.setMinimumSize(1000, 600)
+        size_window_to_screen(self)
         self._records = load_records(DATA_FILE_PATH)
         self._page_by_type: dict[str, int] = {rt: 1 for rt in RECORD_TYPES}
         # Latched on Search click, not on keystroke; empty string disables the filter.
