@@ -78,7 +78,7 @@ def _seed_client(window, **overrides) -> dict:
 def test_delete_without_valid_selection_is_a_no_op(
     main_window, stale_selection: bool
 ) -> None:
-    _seed_client(main_window, id_value="1")
+    _seed_client(main_window)
     if stale_selection:
         # A dict not in _records — identity check should reject it.
         main_window._selected_record_by_type["Client"] = {
@@ -93,7 +93,7 @@ def test_delete_without_valid_selection_is_a_no_op(
 
 
 def test_delete_without_selection_reports_required_message(main_window) -> None:
-    _seed_client(main_window, id_value="1")
+    _seed_client(main_window)
     main_window._on_delete("Client", {})
     assert "Select a record to delete first." in main_window.status._status_lbl.text()
 
@@ -113,7 +113,7 @@ def test_declined_confirmation_leaves_records_untouched(
     window = mw.MainWindow()
     monkeypatch.setattr(mw, "confirm", lambda *_args, **_kwargs: False)
 
-    window._on_create("Client", _client_payload(id_value="1"))
+    window._on_create("Client", _client_payload())
     window._on_record_selected("Client", 0)
     before = list(window._records)
 
@@ -129,8 +129,8 @@ def test_declined_confirmation_leaves_records_untouched(
 
 
 def test_confirmed_delete_removes_selected_record(main_window) -> None:
-    _seed_client(main_window, id_value="1", name="Alice")
-    _seed_client(main_window, id_value="2", name="Bob")
+    _seed_client(main_window, name="Alice")
+    _seed_client(main_window, name="Bob")
     main_window._on_record_selected("Client", 0)
 
     main_window._on_delete("Client", {})
@@ -142,8 +142,8 @@ def test_confirmed_delete_removes_selected_record(main_window) -> None:
 def test_confirmed_delete_persists_to_disk(main_window) -> None:
     from gui import main_window as mw
 
-    _seed_client(main_window, id_value="1", name="Alice")
-    _seed_client(main_window, id_value="2", name="Bob")
+    _seed_client(main_window, name="Alice")
+    _seed_client(main_window, name="Bob")
     main_window._on_record_selected("Client", 0)
     main_window._on_delete("Client", {})
 
@@ -160,8 +160,8 @@ def test_confirmed_delete_persists_to_disk(main_window) -> None:
     [
         pytest.param(
             [
-                ("Airline", _airline_payload(id_value="1")),
-                ("Airline", _airline_payload(id_value="2", company="Beta")),
+                ("Airline", _airline_payload()),
+                ("Airline", _airline_payload(company="Beta")),
             ],
             ("Airline", 1),
             [{"Type": "Airline", "ID": 1, "Company Name": "Acme"}],
@@ -193,7 +193,7 @@ def test_delete_works_for_record_type(
 def test_delete_last_record_writes_empty_file(main_window) -> None:
     from gui import main_window as mw
 
-    _seed_client(main_window, id_value="1")
+    _seed_client(main_window)
     main_window._on_record_selected("Client", 0)
     main_window._on_delete("Client", {})
 
@@ -209,7 +209,7 @@ def test_delete_last_record_writes_empty_file(main_window) -> None:
 
 
 def test_deleting_the_only_record_clears_the_form(main_window) -> None:
-    _seed_client(main_window, id_value="1", name="Alice")
+    _seed_client(main_window, name="Alice")
     main_window._on_record_selected("Client", 0)
     form = main_window._tabs_by_type["Client"].view.form
     assert form.form_inputs["Name"].text() == "Alice"  # populated before delete
@@ -221,7 +221,7 @@ def test_deleting_the_only_record_clears_the_form(main_window) -> None:
 
 
 def test_deleting_the_only_record_drops_the_selection_to_none(main_window) -> None:
-    _seed_client(main_window, id_value="1")
+    _seed_client(main_window)
     main_window._on_record_selected("Client", 0)
     assert main_window._selected_record_by_type["Client"] is main_window._records[0]
 
@@ -235,9 +235,9 @@ def test_consecutive_delete_clicks_keep_removing_rows(main_window) -> None:
     Delete again must remove the next record without forcing another row
     click. Selection clamps to the same table-row position so 'Delete'
     becomes a 'remove next' button when held over the same logical slot."""
-    _seed_client(main_window, id_value="1", name="Alice")
-    _seed_client(main_window, id_value="2", name="Bob")
-    _seed_client(main_window, id_value="3", name="Carol")
+    _seed_client(main_window, name="Alice")
+    _seed_client(main_window, name="Bob")
+    _seed_client(main_window, name="Carol")
 
     main_window._on_record_selected("Client", 0)
     main_window._on_delete("Client", {})  # removes Alice
@@ -251,8 +251,8 @@ def test_consecutive_delete_clicks_keep_removing_rows(main_window) -> None:
 def test_delete_repopulates_form_with_the_record_now_at_that_position(
     main_window,
 ) -> None:
-    _seed_client(main_window, id_value="1", name="Alice")
-    _seed_client(main_window, id_value="2", name="Bob")
+    _seed_client(main_window, name="Alice")
+    _seed_client(main_window, name="Bob")
     main_window._on_record_selected("Client", 0)
 
     main_window._on_delete("Client", {})
@@ -264,8 +264,8 @@ def test_delete_repopulates_form_with_the_record_now_at_that_position(
 
 
 def test_deleting_the_last_row_clamps_selection_to_the_new_last(main_window) -> None:
-    _seed_client(main_window, id_value="1", name="Alice")
-    _seed_client(main_window, id_value="2", name="Bob")
+    _seed_client(main_window, name="Alice")
+    _seed_client(main_window, name="Bob")
     main_window._on_record_selected("Client", 1)  # Bob, the last row
 
     main_window._on_delete("Client", {})
@@ -280,8 +280,8 @@ def test_delete_clamping_stays_within_the_same_record_type(main_window) -> None:
     we clamp to is within the type-filtered list — so deleting a Client
     must never accidentally select an Airline at the same absolute index."""
     main_window._on_create("Airline", {"ID": "1", "Company Name": "Acme"})
-    _seed_client(main_window, id_value="1", name="Alice")
-    _seed_client(main_window, id_value="2", name="Bob")
+    _seed_client(main_window, name="Alice")
+    _seed_client(main_window, name="Bob")
     main_window._on_record_selected("Client", 0)  # Alice (abs idx 1)
 
     main_window._on_delete("Client", {})
@@ -313,8 +313,8 @@ def test_save_failure_during_delete_leaves_records_untouched(
 ) -> None:
     from gui import main_window as mw
 
-    _seed_client(main_window, id_value="1")
-    _seed_client(main_window, id_value="2")
+    _seed_client(main_window)
+    _seed_client(main_window)
     main_window._on_record_selected("Client", 0)
     before = list(main_window._records)
 
