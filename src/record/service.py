@@ -17,6 +17,7 @@ from record.validator import (
 
 AUTO_ID_TYPES = ("Client", "Airline")
 
+
 def next_id(records: list[dict], record_type: str) -> int:
     # max-plus-one preserves gaps so old IDs that may be referenced
     # elsewhere stay stable; first record of a type gets 1.

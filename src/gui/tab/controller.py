@@ -16,7 +16,10 @@ class TabController(QObject):
     record_selected = Signal(str, int)
 
     def __init__(
-        self, form_ctrl: BaseFormController, list_ctrl: RecordListController, record_type: str
+        self,
+        form_ctrl: BaseFormController,
+        list_ctrl: RecordListController,
+        record_type: str,
     ) -> None:
         super().__init__()
         self._record_type = record_type
