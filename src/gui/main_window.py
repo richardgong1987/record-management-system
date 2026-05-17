@@ -106,9 +106,11 @@ class MainWindow(QMainWindow):
         ctrl.record_selected.connect(self._on_record_selected)
 
     def _on_create(self, record_type: str, payload: dict) -> None:
-        if record_type in AUTO_ID_TYPES:
-            payload = {**payload, "ID": str(next_id(self._records, record_type))}
         try:
+            # next_id is inside the try so a malformed existing ID in the
+            # JSONL surfaces as a status-bar message, not a GUI crash.
+            if record_type in AUTO_ID_TYPES:
+                payload = {**payload, "ID": str(next_id(self._records, record_type))}
             record = create_record(record_type, payload)
             check_unique_id(record, self._records)
         except RecordValidationError as exc:

@@ -118,3 +118,25 @@ def test_validation_failure_does_not_touch_records(main_window) -> None:
     # orchestrator before validation runs.
     main_window._on_create("Client", _client_payload(name=""))
     assert len(main_window._records) == before
+
+
+# ---------------------------------------------------------------------------
+# Malformed existing ID — a legacy or hand-edited JSONL row with a
+# non-numeric ID must not crash the create button. next_id raises
+# RecordValidationError, the orchestrator catches it, the status bar
+# reports the problem, and _records is untouched.
+# ---------------------------------------------------------------------------
+
+
+def test_create_with_malformed_existing_id_reports_and_does_not_crash(
+    main_window,
+) -> None:
+    # Inject a legacy-style row directly so we exercise the next_id error
+    # path without depending on the public create API.
+    main_window._records.append({"Type": "Client", "ID": "abc"})
+    before = list(main_window._records)
+
+    main_window._on_create("Client", _client_payload(name="Alice"))
+
+    assert main_window._records == before
+    assert "non-numeric ID" in main_window.status._status_lbl.text()
