@@ -14,10 +14,16 @@ from gui.styles import SPACING
 
 
 class BaseFormView(QWidget):
-    def __init__(self, text_fields: list[str], group_name: str) -> None:
+    def __init__(
+        self,
+        text_fields: list[str],
+        group_name: str,
+        read_only_fields: list[str] | None = None,
+    ) -> None:
         super().__init__()
         self.text_fields = text_fields
         self.group_name = group_name
+        self.read_only_fields = tuple(read_only_fields or ())
         self.form_inputs: dict[str, QWidget] = {}
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -43,6 +49,9 @@ class BaseFormView(QWidget):
             line_edit = QLineEdit()
             if field == "Date":
                 line_edit.setPlaceholderText("YYYY-MM-DDTHH:MM:SS")
+            if field in self.read_only_fields:
+                line_edit.setReadOnly(True)
+                line_edit.setPlaceholderText("(auto-assigned)")
             self.form_inputs[field] = line_edit
             form.addRow(f"{field}:", line_edit)
 

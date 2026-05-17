@@ -14,10 +14,12 @@ from gui.tab.controller import TabController
 from gui.tab_registry import RECORD_TYPES, Tab, build_tab
 from gui.window_sizing import apply_responsive_size
 from record import (
+    AUTO_ID_TYPES,
     RecordValidationError,
     check_unique_id,
     create_record,
     load_records,
+    next_id,
     save_records,
     search_records,
 )
@@ -105,6 +107,10 @@ class MainWindow(QMainWindow):
 
     def _on_create(self, record_type: str, payload: dict) -> None:
         try:
+            # next_id is inside the try so a malformed existing ID in the
+            # JSONL surfaces as a status-bar message, not a GUI crash.
+            if record_type in AUTO_ID_TYPES:
+                payload = {**payload, "ID": str(next_id(self._records, record_type))}
             record = create_record(record_type, payload)
             check_unique_id(record, self._records)
         except RecordValidationError as exc:
@@ -147,6 +153,11 @@ class MainWindow(QMainWindow):
         if selected is None:
             self.status.set_status("Select a record to update first.")
             return
+
+        if record_type in AUTO_ID_TYPES:
+            # Auto-IDs are immutable through the GUI — preserve the existing
+            # ID so a read-only widget (or a tampered payload) can't change it.
+            payload = {**payload, "ID": str(selected["ID"])}
 
         try:
             record = create_record(record_type, payload)

@@ -15,6 +15,26 @@ from record.validator import (
     check_required,
 )
 
+AUTO_ID_TYPES = ("Client", "Airline")
+
+
+def next_id(records: list[dict], record_type: str) -> int:
+    # max-plus-one preserves gaps so old IDs that may be referenced
+    # elsewhere stay stable; first record of a type gets 1.
+    type_rows = [r for r in records if r.get("Type") == record_type]
+    if not type_rows:
+        return 1
+    try:
+        return max(int(r.get("ID", 0)) for r in type_rows) + 1
+    except (TypeError, ValueError) as exc:
+        # A legacy or hand-edited JSONL row may have a non-numeric ID.
+        # Surface as a validation error so the orchestrator shows a
+        # status-bar message instead of letting the GUI crash.
+        raise RecordValidationError(
+            f"Cannot auto-assign next {record_type} ID — "
+            f"an existing record has a non-numeric ID."
+        ) from exc
+
 
 def create_record(record_type: str, payload: dict) -> dict:
     if record_type not in ALLOWED_FIELDS:
