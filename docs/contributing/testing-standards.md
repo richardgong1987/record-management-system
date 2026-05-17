@@ -2,7 +2,7 @@
 
 Practical conventions the team follows for every unit test under [tests/unit/](../../tests/unit/). The CSCK541 brief asks for unit tests per module; these standards keep the suite simple and readable as it grows.
 
-> The test suite is split by category: `tests/unit/` (where every current test lives), with `tests/integration/` and `tests/e2e/` reserved for the future integration and end-to-end suites. The conventions below apply to **unit tests**; integration/e2e tests will get their own standards once those suites land.
+> The test suite is split by category: `tests/unit/` (one-module-at-a-time tests, where most current tests live), `tests/integration/` (lightweight cross-module workflow tests — see [Integration tests](../design/integration-tests.md) for what belongs there), and `tests/e2e/` reserved for the future end-to-end suite. The conventions below apply to **unit tests**; the integration suite follows the same parametrize-first style but is scoped to module seams rather than single modules.
 
 ## Useful links
 
