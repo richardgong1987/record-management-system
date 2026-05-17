@@ -1,5 +1,6 @@
 from PySide6.QtCore import QObject, Signal
 
+from gui.common.base_form_controller import BaseFormController
 from gui.record_list.controller import RecordListController
 
 
@@ -15,7 +16,7 @@ class TabController(QObject):
     record_selected = Signal(str, int)
 
     def __init__(
-        self, form_ctrl: QObject, list_ctrl: RecordListController, record_type: str
+        self, form_ctrl: BaseFormController, list_ctrl: RecordListController, record_type: str
     ) -> None:
         super().__init__()
         self._record_type = record_type

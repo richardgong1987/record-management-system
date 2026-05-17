@@ -7,9 +7,9 @@ import pytest
 from PySide6.QtWidgets import QApplication
 
 
-def _client_payload(id_value: str = "1", name: str = "Alice") -> dict:
+def _client_payload(name: str = "Alice") -> dict:
+    # ID intentionally omitted — Client IDs are auto-assigned.
     return {
-        "ID": id_value,
         "Name": name,
         "Address Line 1": "1 Main St",
         "Address Line 2": "",
@@ -22,8 +22,9 @@ def _client_payload(id_value: str = "1", name: str = "Alice") -> dict:
     }
 
 
-def _airline_payload(id_value: str = "1", company: str = "Acme") -> dict:
-    return {"ID": id_value, "Company Name": company}
+def _airline_payload(company: str = "Acme") -> dict:
+    # ID intentionally omitted — Airline IDs are auto-assigned.
+    return {"Company Name": company}
 
 
 def _flight_payload() -> dict:

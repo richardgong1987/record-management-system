@@ -15,6 +15,16 @@ from record.validator import (
     check_required,
 )
 
+AUTO_ID_TYPES = ("Client", "Airline")
+
+def next_id(records: list[dict], record_type: str) -> int:
+    # max-plus-one preserves gaps so old IDs that may be referenced
+    # elsewhere stay stable; first record of a type gets 1.
+    type_rows = [r for r in records if r.get("Type") == record_type]
+    if not type_rows:
+        return 1
+    return max(int(r.get("ID", 0)) for r in type_rows) + 1
+
 
 def create_record(record_type: str, payload: dict) -> dict:
     if record_type not in ALLOWED_FIELDS:
