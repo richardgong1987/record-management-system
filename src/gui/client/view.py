@@ -9,7 +9,11 @@ from gui.common.base_form_view import BaseFormView
 
 class ClientFormView(BaseFormView):
     def __init__(self) -> None:
-        super().__init__(text_fields=CLIENT_TEXT_FIELDS, group_name="Client Details")
+        super().__init__(
+            text_fields=CLIENT_TEXT_FIELDS,
+            group_name="Client Details",
+            read_only_fields=["ID"],
+        )
 
     def setup_extra_fields(self, form: QFormLayout) -> None:
         country = QComboBox()

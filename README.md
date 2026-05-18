@@ -47,7 +47,7 @@ A second workflow ([`.github/workflows/test.yml`](.github/workflows/test.yml)) r
 pytest
 ```
 
-Test configuration (discovery paths and `src/` on the import path) lives in [`pyproject.toml`](pyproject.toml) under `[tool.pytest.ini_options]`. The suite is split by category: unit tests live under [`tests/unit/`](tests/unit/) (mirroring `src/`), with `tests/integration/` and `tests/e2e/` reserved for the future integration and end-to-end suites. New modules need their own unit tests under `tests/unit/<area>/` — the assignment brief requires unit tests for each module. For how the team writes those tests (parametrize-first, naming, fixtures), see the [Unit testing standards](docs/contributing/testing-standards.md).
+Test configuration (discovery paths and `src/` on the import path) lives in [`pyproject.toml`](pyproject.toml) under `[tool.pytest.ini_options]`. The suite is split by category: unit tests live under [`tests/unit/`](tests/unit/) (mirroring `src/`), lightweight cross-module workflow tests live under [`tests/integration/`](tests/integration/) (see [Integration tests](docs/design/integration-tests.md)), and `tests/e2e/` is reserved for the future end-to-end suite. New modules need their own unit tests under `tests/unit/<area>/` — the assignment brief requires unit tests for each module. For how the team writes those tests (parametrize-first, naming, fixtures), see the [Unit testing standards](docs/contributing/testing-standards.md).
 
 ## Documentation
 
@@ -73,6 +73,7 @@ This README is an index. The documents below live under [docs/](docs/).
 - [Update record](docs/design/update-record.md) — design and tour for the update-record flow: row click → form populate → validate → in-place replace → atomic write.
 - [Delete record](docs/design/delete-record.md) — design and tour for the delete-record flow: row click → Delete button → confirm dialog → atomic write of the survivor list.
 - [Clear all records](docs/design/clear-all-records.md) — design and tour for the Clear button: per-tab bulk delete of every record of the active type, with confirmation.
+- [Integration tests](docs/design/integration-tests.md) — design for the cross-module workflow tests under `tests/integration/`: what they cover, where they sit next to the unit suite, and how the save-failure rollback is verified through `MainWindow`.
 - [Packaging & release](docs/design/packaging-and-release.md) — how the matrix CI build produces `.app` / `.exe` / Linux bundles and uploads them to GitHub Releases.
 - _Planned:_ Search & display records
 - _Planned:_ Architecture overview

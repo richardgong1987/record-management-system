@@ -11,7 +11,7 @@ from gui.airline.controller import AirlineFormController
 from gui.airline.types import AIRLINE_TEXT_FIELDS
 from gui.airline.view import AirlineFormView
 from gui.client.controller import ClientFormController
-from gui.client.types import CLIENT_TEXT_FIELDS
+from gui.client.types import CLIENT_TABLE_COLUMNS
 from gui.client.view import ClientFormView
 from gui.flight.controller import FlightFormController
 from gui.flight.types import FLIGHT_TEXT_FIELDS
@@ -23,7 +23,7 @@ from gui.tab.view import TabView
 
 # Per record type: (form view class, form controller class, table columns).
 RECORD_TYPES = {
-    "Client": (ClientFormView, ClientFormController, CLIENT_TEXT_FIELDS),
+    "Client": (ClientFormView, ClientFormController, CLIENT_TABLE_COLUMNS),
     "Airline": (AirlineFormView, AirlineFormController, AIRLINE_TEXT_FIELDS),
     "Flight": (FlightFormView, FlightFormController, FLIGHT_TEXT_FIELDS),
 }

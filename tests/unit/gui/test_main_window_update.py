@@ -7,9 +7,11 @@ import pytest
 from PySide6.QtWidgets import QApplication
 
 
-def _client_payload(id_value: str = "1", name: str = "Alice") -> dict:
+def _client_payload(name: str = "Alice") -> dict:
+    # ID intentionally omitted — Client IDs are auto-assigned on create and
+    # preserved (not user-editable) on update, so the GUI form does not
+    # collect one.
     return {
-        "ID": id_value,
         "Name": name,
         "Address Line 1": "1 Main St",
         "Address Line 2": "",
@@ -22,8 +24,9 @@ def _client_payload(id_value: str = "1", name: str = "Alice") -> dict:
     }
 
 
-def _airline_payload(id_value: str = "1", company: str = "Acme") -> dict:
-    return {"ID": id_value, "Company Name": company}
+def _airline_payload(company: str = "Acme") -> dict:
+    # ID intentionally omitted — Airline IDs are auto-assigned.
+    return {"Company Name": company}
 
 
 def _flight_payload(
@@ -71,10 +74,10 @@ def _seed_client(window, **overrides) -> dict:
 
 
 def test_update_without_selection_reports_required_message(main_window) -> None:
-    _seed_client(main_window, id_value="1")
+    _seed_client(main_window)
     before = list(main_window._records)
 
-    main_window._on_update("Client", _client_payload(id_value="1", name="Mallory"))
+    main_window._on_update("Client", _client_payload(name="Mallory"))
 
     assert main_window._records == before
     assert "Select a record to update first." in main_window.status._status_lbl.text()
@@ -83,12 +86,12 @@ def test_update_without_selection_reports_required_message(main_window) -> None:
 def test_update_with_stale_selection_is_treated_as_no_selection(
     main_window,
 ) -> None:
-    _seed_client(main_window, id_value="1")
+    _seed_client(main_window)
     # Force a selection that's no longer in _records (identity-check fails).
     main_window._selected_record_by_type["Client"] = {"Type": "Client", "stale": True}
 
     before = list(main_window._records)
-    main_window._on_update("Client", _client_payload(id_value="1", name="Mallory"))
+    main_window._on_update("Client", _client_payload(name="Mallory"))
 
     assert main_window._records == before
 
@@ -110,11 +113,11 @@ def test_declined_confirmation_leaves_records_untouched(
     monkeypatch.setattr(mw, "confirm", lambda *_a, **_k: False)
     window = mw.MainWindow()
 
-    window._on_create("Client", _client_payload(id_value="1", name="Alice"))
+    window._on_create("Client", _client_payload(name="Alice"))
     window._on_record_selected("Client", 0)
     before = list(window._records)
 
-    window._on_update("Client", _client_payload(id_value="1", name="Alicia"))
+    window._on_update("Client", _client_payload(name="Alicia"))
 
     assert window._records == before
     assert "Update cancelled." in window.status._status_lbl.text()
@@ -126,22 +129,23 @@ def test_declined_confirmation_leaves_records_untouched(
 
 
 def test_selecting_a_row_populates_the_form(main_window) -> None:
-    _seed_client(main_window, id_value="7", name="Bob")
+    _seed_client(main_window, name="Bob")
     main_window._on_record_selected("Client", 0)
 
     form = main_window._tabs_by_type["Client"].view.form
-    assert form.form_inputs["ID"].text() == "7"
+    # First seeded Client gets the auto-assigned ID 1.
+    assert form.form_inputs["ID"].text() == "1"
     assert form.form_inputs["Name"].text() == "Bob"
     assert main_window._selected_record_by_type["Client"] is main_window._records[0]
 
 
 def test_update_replaces_the_selected_record_in_place(main_window) -> None:
-    _seed_client(main_window, id_value="1", name="Alice")
-    _seed_client(main_window, id_value="2", name="Bob")
+    _seed_client(main_window, name="Alice")
+    _seed_client(main_window, name="Bob")
     assert len(main_window._records) == 2
 
     main_window._on_record_selected("Client", 0)
-    main_window._on_update("Client", _client_payload(id_value="1", name="Alicia"))
+    main_window._on_update("Client", _client_payload(name="Alicia"))
 
     assert len(main_window._records) == 2  # no append
     assert main_window._records[0]["Name"] == "Alicia"
@@ -151,9 +155,9 @@ def test_update_replaces_the_selected_record_in_place(main_window) -> None:
 def test_update_persists_to_disk(main_window) -> None:
     from gui import main_window as mw
 
-    _seed_client(main_window, id_value="1", name="Alice")
+    _seed_client(main_window, name="Alice")
     main_window._on_record_selected("Client", 0)
-    main_window._on_update("Client", _client_payload(id_value="1", name="Alicia"))
+    main_window._on_update("Client", _client_payload(name="Alicia"))
 
     import jsonlines
 
@@ -168,8 +172,8 @@ def test_update_persists_to_disk(main_window) -> None:
     [
         pytest.param(
             "Airline",
-            _airline_payload(id_value="1", company="Acme"),
-            _airline_payload(id_value="1", company="Acme Aviation"),
+            _airline_payload(company="Acme"),
+            _airline_payload(company="Acme Aviation"),
             "Company Name",
             "Acme Aviation",
             id="airline",
@@ -204,27 +208,12 @@ def test_update_works_for_record_type(
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize(
-    "invalid_payload",
-    [
-        pytest.param(
-            _client_payload(id_value="1", name=""),
-            id="empty-required-field",
-        ),
-        pytest.param(
-            _client_payload(id_value="abc"),
-            id="non-integer-id",
-        ),
-    ],
-)
-def test_update_with_invalid_payload_is_rejected(
-    main_window, invalid_payload: dict
-) -> None:
-    _seed_client(main_window, id_value="1")
+def test_update_with_empty_required_field_is_rejected(main_window) -> None:
+    _seed_client(main_window)
     main_window._on_record_selected("Client", 0)
 
     before = list(main_window._records)
-    main_window._on_update("Client", invalid_payload)
+    main_window._on_update("Client", _client_payload(name=""))
 
     assert main_window._records == before
 
@@ -232,40 +221,35 @@ def test_update_with_invalid_payload_is_rejected(
 def test_update_with_empty_name_reports_required_message(main_window) -> None:
     # Pinned separately because we also want to assert the status-bar text,
     # not just that records are untouched.
-    _seed_client(main_window, id_value="1")
+    _seed_client(main_window)
     main_window._on_record_selected("Client", 0)
 
-    main_window._on_update("Client", _client_payload(id_value="1", name=""))
+    main_window._on_update("Client", _client_payload(name=""))
 
     assert "Name is required." in main_window.status._status_lbl.text()
 
 
 # ---------------------------------------------------------------------------
-# Uniqueness — excluding the record being updated, not the full list.
+# ID preservation — the orchestrator overrides whatever ID the payload
+# carries with the selected record's ID, so a tampered payload (e.g. a
+# read-only widget bypass) cannot rename a record.
 # ---------------------------------------------------------------------------
 
 
-def test_update_allows_keeping_the_same_id(main_window) -> None:
-    """A no-op ID edit must NOT trip the uniqueness check; otherwise no
-    update on Client/Airline would ever succeed without renaming."""
-    _seed_client(main_window, id_value="1")
+def test_update_preserves_existing_id_even_if_payload_carries_a_different_one(
+    main_window,
+) -> None:
+    _seed_client(main_window, name="Alice")
+    _seed_client(main_window, name="Bob")
     main_window._on_record_selected("Client", 0)
-    main_window._on_update("Client", _client_payload(id_value="1", name="Renamed"))
+    original_id = main_window._records[0]["ID"]
 
-    assert main_window._records[0]["Name"] == "Renamed"
+    # Payload smuggles a different ID; orchestrator must ignore it.
+    tampered = {**_client_payload(name="Alicia"), "ID": "999"}
+    main_window._on_update("Client", tampered)
 
-
-def test_update_rejects_collision_with_another_records_id(main_window) -> None:
-    _seed_client(main_window, id_value="1", name="Alice")
-    _seed_client(main_window, id_value="2", name="Bob")
-    main_window._on_record_selected("Client", 0)
-
-    before = list(main_window._records)
-    # Try to change Alice's ID to 2 — Bob already has it.
-    main_window._on_update("Client", _client_payload(id_value="2", name="Alice"))
-
-    assert main_window._records == before
-    assert "already exists" in main_window.status._status_lbl.text()
+    assert main_window._records[0]["ID"] == original_id
+    assert main_window._records[0]["Name"] == "Alicia"
 
 
 # ---------------------------------------------------------------------------
@@ -288,7 +272,7 @@ def test_save_failure_during_update_leaves_records_untouched(
 ) -> None:
     from gui import main_window as mw
 
-    _seed_client(main_window, id_value="1", name="Alice")
+    _seed_client(main_window, name="Alice")
     main_window._on_record_selected("Client", 0)
     before = list(main_window._records)
 
@@ -297,7 +281,7 @@ def test_save_failure_during_update_leaves_records_untouched(
 
     monkeypatch.setattr(mw, "save_records", raise_exc)
 
-    main_window._on_update("Client", _client_payload(id_value="1", name="Alicia"))
+    main_window._on_update("Client", _client_payload(name="Alicia"))
 
     assert main_window._records == before
     assert "Save failed:" in main_window.status._status_lbl.text()
