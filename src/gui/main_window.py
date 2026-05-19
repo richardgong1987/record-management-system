@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from PySide6.QtWidgets import (
     QMainWindow,
     QTabWidget,
@@ -13,15 +15,17 @@ from gui.styles import SPACING
 from gui.tab.controller import TabController
 from gui.tab_registry import RECORD_TYPES, Tab, build_tab
 from gui.window_sizing import apply_responsive_size
-from record import (
-    AUTO_ID_TYPES,
-    RecordValidationError,
-    check_unique_id,
-    create_record,
-    load_records,
-    next_id,
-    save_records,
-    search_records,
+from record import load_records, save_records, search_records
+from record.use_cases import (
+    Cancelled,
+    ClearAllRecords,
+    CreateRecord,
+    DeleteRecord,
+    Err,
+    Ok,
+    Result,
+    State,
+    UpdateRecord,
 )
 from shared.utils.pagination import Page, paginate
 
@@ -34,49 +38,71 @@ DATA_FILE_PATH = _CONFIG.record_file
 _WINDOW = _CONFIG.window
 
 
+@dataclass(frozen=True)
+class _UseCases:
+    # Bundle the four mutating use cases so MainWindow stays under pylint's
+    # ``max-attributes`` and the slots all reach them through one handle.
+    create: CreateRecord
+    update: UpdateRecord
+    delete: DeleteRecord
+    clear_all: ClearAllRecords
+
+
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         # Flow:
-        # 1. Build per-record-type tabs (form + record list + tab controller)
-        # 2. Compose the central QTabWidget from the tabs
-        # 3. Mount the two-cell status bar with the data-file path
-        # 4. Wire each tab controller's signals to status-bar feedback
+        # 1. Load records + per-tab view state
+        # 2. Construct use cases with save + confirm ports
+        # 3. Build per-record-type tabs and compose the central QTabWidget
+        # 4. Mount status bar and wire signals
         super().__init__()
-
-        # Title is rendered in the in-window header strip, so the OS title bar
-        # stays blank. Cmd-Tab / taskbar labelling still uses the application
-        # name set via QApplication.setApplicationName in main.py.
         self.setWindowTitle("")
         apply_responsive_size(self, _WINDOW)
+
+        # Step 1: View state
         self._records = load_records(DATA_FILE_PATH)
         self._page_by_type: dict[str, int] = {rt: 1 for rt in RECORD_TYPES}
-        # Latched on Search click, not on keystroke; empty string disables the filter.
+        # Latched on Search click, not on keystroke; empty disables the filter.
         self._query_by_type: dict[str, str] = {rt: "" for rt in RECORD_TYPES}
-        # The record dict currently selected in each tab. Storing the
-        # reference (not an absolute index) keeps selection stable across
-        # list rewrites in other tabs and is identity-safe when two records
-        # have identical field values (e.g. duplicate Flights).
+        # Stored as the dict reference (not an index) so two records with
+        # identical field values (e.g. duplicate Flights) stay distinguishable
+        # and so list rewrites in other tabs don't shift it.
         self._selected_record_by_type: dict[str, dict | None] = {
             rt: None for rt in RECORD_TYPES
         }
 
-        # Step 1: Build tabs
+        # Step 2: Use cases
+        self._uc = self._build_use_cases()
+
+        # Step 3: Tabs + central widget
         self._tabs: list[Tab] = [build_tab(rt) for rt in RECORD_TYPES]
         self._tabs_by_type: dict[str, Tab] = {t.record_type: t for t in self._tabs}
-
-        # Step 2: Compose central QTabWidget
         self.setCentralWidget(self._compose_central())
 
-        # Step 3: Mount status bar
+        # Step 4: Status bar + signal wiring
         self.status = StatusBarView()
         self.status.set_data_file(DATA_FILE_PATH)
         self.setStatusBar(self.status)
-
-        # Step 4: Wire signals
         for tab in self._tabs:
             self._connect_tab_signals(tab.controller)
 
         self._refresh_all_tables()
+
+    def _build_use_cases(self) -> _UseCases:
+        # Ports are closures over module-level ``save_records`` / ``confirm``
+        # so that tests monkeypatching those names take effect on every call.
+        def save(records: list[dict]) -> None:
+            save_records(DATA_FILE_PATH, records)
+
+        def ask(title: str, body: str) -> bool:
+            return confirm(self, title, body)
+
+        return _UseCases(
+            create=CreateRecord(save=save),
+            update=UpdateRecord(save=save, confirm=ask),
+            delete=DeleteRecord(save=save, confirm=ask),
+            clear_all=ClearAllRecords(save=save, confirm=ask),
+        )
 
     def _compose_central(self) -> QWidget:
         tabs = QTabWidget()
@@ -105,37 +131,64 @@ class MainWindow(QMainWindow):
         ctrl.next_requested.connect(lambda rt: self._step_page(rt, +1))
         ctrl.record_selected.connect(self._on_record_selected)
 
+    # -- Use-case slots --------------------------------------------------
+
     def _on_create(self, record_type: str, payload: dict) -> None:
-        try:
-            # next_id is inside the try so a malformed existing ID in the
-            # JSONL surfaces as a status-bar message, not a GUI crash.
-            if record_type in AUTO_ID_TYPES:
-                payload = {**payload, "ID": str(next_id(self._records, record_type))}
-            record = create_record(record_type, payload)
-            check_unique_id(record, self._records)
-        except RecordValidationError as exc:
-            self.status.set_status(str(exc))
-            return
+        self._apply(
+            record_type, self._uc.create(record_type, payload, self._state(record_type))
+        )
 
-        self._records.append(record)
-        try:
-            save_records(DATA_FILE_PATH, self._records)
-        except OSError as exc:
-            # Roll back the in-memory append so _records stays consistent
-            # with the on-disk file when persistence fails.
-            self._records.pop()
-            self.status.set_status(f"Save failed: {exc}")
-            return
+    def _on_update(self, record_type: str, payload: dict) -> None:
+        self._apply(
+            record_type, self._uc.update(record_type, payload, self._state(record_type))
+        )
 
-        self._refresh_all_tables()
-        self.status.set_status(f"Create {record_type}: {record}")
+    def _on_delete(self, record_type: str, payload: dict) -> None:
+        self._apply(
+            record_type, self._uc.delete(record_type, payload, self._state(record_type))
+        )
+
+    def _on_clear_all(self, record_type: str) -> None:
+        self._apply(
+            record_type, self._uc.clear_all(record_type, self._state(record_type))
+        )
+
+    def _state(self, record_type: str) -> State:
+        return State(self._records, self._selected_record(record_type))
+
+    def _apply(self, record_type: str, result: Result) -> None:
+        # Single rendering point for every mutating use case. Err / Cancelled
+        # are status-only; Ok swaps in-memory state AFTER the use case has
+        # already persisted, so disk and memory cannot drift apart.
+        match result:
+            case Err(message=msg) | Cancelled(message=msg):
+                self.status.set_status(msg)
+            case Ok(
+                new_records=records,
+                new_selection=selection,
+                message=msg,
+                repaint_form=repaint,
+            ):
+                self._records = records
+                self._selected_record_by_type[record_type] = selection
+                if repaint:
+                    self._repaint_form(record_type, selection)
+                self._refresh_all_tables()
+                self.status.set_status(msg)
+
+    def _repaint_form(self, record_type: str, selection: dict | None) -> None:
+        form = self._tabs_by_type[record_type].view.form
+        if selection is None:
+            form.clear()
+        else:
+            form.populate(selection)
+
+    # -- Selection (view state, not a use case) --------------------------
 
     def _on_record_selected(self, record_type: str, row_index: int) -> None:
         page = self._visible_page(record_type)
         if not 0 <= row_index < len(page.rows):
             return
-        # Store the dict reference directly: two records with identical
-        # values (e.g. duplicate Flights) stay distinguishable by identity.
         selected = page.rows[row_index]
         self._selected_record_by_type[record_type] = selected
         self._tabs_by_type[record_type].view.form.populate(selected)
@@ -148,112 +201,7 @@ class MainWindow(QMainWindow):
             return None
         return record
 
-    def _on_update(self, record_type: str, payload: dict) -> None:
-        selected = self._selected_record(record_type)
-        if selected is None:
-            self.status.set_status("Select a record to update first.")
-            return
-
-        if record_type in AUTO_ID_TYPES:
-            # Auto-IDs are immutable through the GUI — preserve the existing
-            # ID so a read-only widget (or a tampered payload) can't change it.
-            payload = {**payload, "ID": str(selected["ID"])}
-
-        try:
-            record = create_record(record_type, payload)
-            # Uniqueness is checked against OTHER records (identity-filtered)
-            # so a no-op ID edit still succeeds.
-            others = [r for r in self._records if r is not selected]
-            check_unique_id(record, others)
-        except RecordValidationError as exc:
-            self.status.set_status(str(exc))
-            return
-
-        body = f"Update this {record_type} record?\n\n{record}"
-        if not confirm(self, "Confirm update", body):
-            self.status.set_status("Update cancelled.")
-            return
-
-        new_records = [record if r is selected else r for r in self._records]
-        try:
-            save_records(DATA_FILE_PATH, new_records)
-        except OSError as exc:
-            # Keep self._records pointing at the previous list so in-memory
-            # state never moves ahead of the on-disk file.
-            self.status.set_status(f"Save failed: {exc}")
-            return
-
-        self._records = new_records
-        self._selected_record_by_type[record_type] = record
-        self._refresh_all_tables()
-        self.status.set_status(f"Update {record_type}: {record}")
-
-    def _on_delete(self, record_type: str, _payload: dict) -> None:
-        # Delete keys off the stored selection, not the form payload, so an
-        # edited-but-not-saved form cannot influence which row is removed.
-        record = self._selected_record(record_type)
-        if record is None:
-            self.status.set_status("Select a record to delete first.")
-            return
-
-        body = f"Delete this {record_type} record?\n\n{record}"
-        if not confirm(self, "Confirm delete", body):
-            self.status.set_status("Delete cancelled.")
-            return
-
-        # Capture the table-row position via identity so two identical-valued
-        # records (e.g. duplicate Flights) stay distinguishable.
-        type_records = self._records_for_type(record_type)
-        position_in_type = next(i for i, r in enumerate(type_records) if r is record)
-
-        new_records = [r for r in self._records if r is not record]
-        try:
-            save_records(DATA_FILE_PATH, new_records)
-        except OSError as exc:
-            self.status.set_status(f"Save failed: {exc}")
-            return
-
-        self._records = new_records
-        self._refresh_all_tables()
-        self._reselect_after_delete(record_type, position_in_type)
-        self.status.set_status(f"Delete {record_type}: {record}")
-
-    def _reselect_after_delete(self, record_type: str, deleted_position: int) -> None:
-        survivors = self._records_for_type(record_type)
-        tab = self._tabs_by_type[record_type]
-        if not survivors:
-            self._selected_record_by_type[record_type] = None
-            tab.view.form.clear()
-            return
-
-        new_position = min(deleted_position, len(survivors) - 1)
-        new_record = survivors[new_position]
-        self._selected_record_by_type[record_type] = new_record
-        tab.view.form.populate(new_record)
-
-    def _on_clear_all(self, record_type: str) -> None:
-        if not self._records_for_type(record_type):
-            self.status.set_status(f"No {record_type} records to clear.")
-            return
-        body = f"Delete ALL {record_type} records?\n\nThis cannot be undone."
-        if not confirm(self, "Confirm clear all", body):
-            self.status.set_status("Clear cancelled.")
-            return
-
-        # Other-type records keep their dict identity through this filter, so
-        # other tabs' selections remain valid without an explicit rebase.
-        new_records = [r for r in self._records if r["Type"] != record_type]
-        try:
-            save_records(DATA_FILE_PATH, new_records)
-        except OSError as exc:
-            self.status.set_status(f"Save failed: {exc}")
-            return
-
-        self._records = new_records
-        self._selected_record_by_type[record_type] = None
-        self._tabs_by_type[record_type].view.form.clear()
-        self._refresh_all_tables()
-        self.status.set_status(f"Cleared all {record_type} records.")
+    # -- Search / pagination (view state, not a use case) ----------------
 
     def _on_search(self, record_type: str, query: str) -> None:
         self._query_by_type[record_type] = query
@@ -275,9 +223,6 @@ class MainWindow(QMainWindow):
     def _step_page(self, record_type: str, delta: int) -> None:
         self._page_by_type[record_type] += delta
         self._refresh_tab(self._tabs_by_type[record_type])
-
-    def _records_for_type(self, record_type: str) -> list[dict]:
-        return [record for record in self._records if record["Type"] == record_type]
 
     def _refresh_all_tables(self) -> None:
         for tab in self._tabs:
