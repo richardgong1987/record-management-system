@@ -220,6 +220,7 @@ class MainWindow(QMainWindow):
         self._tabs_by_type[record_type].view.record_list.search_input.clear()
         self._refresh_record_type(record_type)
         self.status.set_status(f"Show all {record_type}.")
+        
     def _reset_page(self, record_type: str) -> None:
         self._page_by_type[record_type] = 1
 
