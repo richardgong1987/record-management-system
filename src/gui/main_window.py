@@ -104,7 +104,7 @@ class MainWindow(QMainWindow):
             clear_all=ClearAllRecords(save=save, confirm=ask),
         )
 
-# -------------------------- UI Construction --------------------------
+    # -- UI construction --------------------------------------------------
 
     def _compose_central(self) -> QWidget:
         tabs = QTabWidget()
@@ -185,7 +185,7 @@ class MainWindow(QMainWindow):
         else:
             form.populate(selection)
 
-    # -------------------------- Selection helpers --------------------------
+    # -- Selection helpers --------------------------------------------------
 
     def _on_record_selected(self, record_type: str, row_index: int) -> None:
         page = self._visible_page(record_type)
@@ -203,7 +203,7 @@ class MainWindow(QMainWindow):
             return None
         return record
 
-# -------------------------- Search / pagination --------------------------
+    # -- Search / pagination --------------------------------------------------
     def _on_search(self, record_type: str, query: str) -> None:
         self._query_by_type[record_type] = query
         self._reset_page(record_type)
@@ -228,7 +228,7 @@ class MainWindow(QMainWindow):
         self._page_by_type[record_type] += delta
         self._refresh_record_type(record_type)
 
-# -------------------------- Table rendering --------------------------
+    # -- Table rendering --------------------------------------------------
     def _refresh_all_tables(self) -> None:
         for tab in self._tabs:
             self._refresh_tab(tab)
