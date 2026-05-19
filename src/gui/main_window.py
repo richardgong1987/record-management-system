@@ -104,6 +104,8 @@ class MainWindow(QMainWindow):
             clear_all=ClearAllRecords(save=save, confirm=ask),
         )
 
+    # -- UI construction --------------------------------------------------
+
     def _compose_central(self) -> QWidget:
         tabs = QTabWidget()
         for tab in self._tabs:
@@ -183,7 +185,7 @@ class MainWindow(QMainWindow):
         else:
             form.populate(selection)
 
-    # -- Selection (view state, not a use case) --------------------------
+    # -- Selection helpers --------------------------------------------------
 
     def _on_record_selected(self, record_type: str, row_index: int) -> None:
         page = self._visible_page(record_type)
@@ -201,12 +203,11 @@ class MainWindow(QMainWindow):
             return None
         return record
 
-    # -- Search / pagination (view state, not a use case) ----------------
-
+    # -- Search / pagination --------------------------------------------------
     def _on_search(self, record_type: str, query: str) -> None:
         self._query_by_type[record_type] = query
-        self._page_by_type[record_type] = 1
-        self._refresh_tab(self._tabs_by_type[record_type])
+        self._reset_page(record_type)
+        self._refresh_record_type(record_type)
         matches = len(search_records(self._records, record_type, query))
         self.status.set_status(
             f"Search {record_type}: {query!r} — {matches} match(es)."
@@ -214,19 +215,26 @@ class MainWindow(QMainWindow):
 
     def _on_show_all(self, record_type: str) -> None:
         self._query_by_type[record_type] = ""
-        self._page_by_type[record_type] = 1
+        self._reset_page(record_type)
         # Keep the visible search box in sync with the (cleared) query state.
         self._tabs_by_type[record_type].view.record_list.search_input.clear()
-        self._refresh_tab(self._tabs_by_type[record_type])
+        self._refresh_record_type(record_type)
         self.status.set_status(f"Show all {record_type}.")
+
+    def _reset_page(self, record_type: str) -> None:
+        self._page_by_type[record_type] = 1
 
     def _step_page(self, record_type: str, delta: int) -> None:
         self._page_by_type[record_type] += delta
-        self._refresh_tab(self._tabs_by_type[record_type])
+        self._refresh_record_type(record_type)
 
+    # -- Table rendering --------------------------------------------------
     def _refresh_all_tables(self) -> None:
         for tab in self._tabs:
             self._refresh_tab(tab)
+
+    def _refresh_record_type(self, record_type: str) -> None:
+        self._refresh_tab(self._tabs_by_type[record_type])
 
     def _refresh_tab(self, tab: Tab) -> None:
         self._paint(tab, self._visible_page(tab.record_type))
