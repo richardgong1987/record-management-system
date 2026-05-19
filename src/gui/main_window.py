@@ -13,7 +13,6 @@ from gui.styles import SPACING
 from gui.tab.controller import TabController
 from gui.tab_registry import RECORD_TYPES, Tab, build_tab
 from gui.window_sizing import apply_responsive_size
-from services import record_manager ##
 from record import (
     AUTO_ID_TYPES,
     RecordValidationError,
@@ -131,17 +130,26 @@ class MainWindow(QMainWindow):
         self._refresh_all_tables()
         self.status.set_status(f"Create {record_type}: {record}")
 
-    def _on_record_selected(self, record_type: str, row_index: int) -> None: ##
-
+    def _on_record_selected(self, record_type: str, row_index: int) -> None:
         page = self._visible_page(record_type)
         if not 0 <= row_index < len(page.rows):
             return
-        record = page.rows[row_index]
-        record_manager.set_selected(record_type, record)
+        # Store the dict reference directly: two records with identical
+        # values (e.g. duplicate Flights) stay distinguishable by identity.
+        selected = page.rows[row_index]
+        self._selected_record_by_type[record_type] = selected
+        self._tabs_by_type[record_type].view.form.populate(selected)
 
-        self._tabs_by_type[record_type].view.form.populate(record)
+    def _selected_record(self, record_type: str) -> dict | None:
+        # Return None for a stale selection — the dict may have been removed
+        # by clear-all or a programmatic mutation; identity check, not ==.
+        record = self._selected_record_by_type.get(record_type)
+        if record is None or not any(r is record for r in self._records):
+            return None
+        return record
+
     def _on_update(self, record_type: str, payload: dict) -> None:
-        selected = record_manager.get_selected(record_type, self._records)
+        selected = self._selected_record(record_type)
         if selected is None:
             self.status.set_status("Select a record to update first.")
             return
@@ -176,14 +184,14 @@ class MainWindow(QMainWindow):
             return
 
         self._records = new_records
-        record_manager.set_selected(record_type, record)
+        self._selected_record_by_type[record_type] = record
         self._refresh_all_tables()
         self.status.set_status(f"Update {record_type}: {record}")
 
     def _on_delete(self, record_type: str, _payload: dict) -> None:
         # Delete keys off the stored selection, not the form payload, so an
         # edited-but-not-saved form cannot influence which row is removed.
-        record = record_manager.get_selected(record_type, self._records) ##
+        record = self._selected_record(record_type)
         if record is None:
             self.status.set_status("Select a record to delete first.")
             return
@@ -206,7 +214,6 @@ class MainWindow(QMainWindow):
             return
 
         self._records = new_records
-        record_manager.clear_selected(record_type) ##
         self._refresh_all_tables()
         self._reselect_after_delete(record_type, position_in_type)
         self.status.set_status(f"Delete {record_type}: {record}")
