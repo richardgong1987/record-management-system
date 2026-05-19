@@ -7,10 +7,11 @@ import pytest
 from PySide6.QtWidgets import QApplication
 
 
-def _client_payload(id_value: str = "1") -> dict:
+def _client_payload(name: str = "Alice") -> dict:
+    # ID intentionally omitted — Client IDs are auto-assigned by the
+    # orchestrator before validation; the GUI form does not collect one.
     return {
-        "ID": id_value,
-        "Name": "Alice",
+        "Name": name,
         "Address Line 1": "1 Main St",
         "Address Line 2": "",
         "Address Line 3": "",
@@ -47,9 +48,30 @@ def main_window(qapp, monkeypatch, tmp_path):
 
 def test_successful_create_appends_record_to_memory(main_window) -> None:
     before = len(main_window._records)
-    main_window._on_create("Client", _client_payload(id_value="99"))
+    main_window._on_create("Client", _client_payload())
     assert len(main_window._records) == before + 1
-    assert main_window._records[-1]["ID"] == 99
+    # First Client in an empty store gets the auto-assigned ID 1.
+    assert main_window._records[-1]["ID"] == 1
+
+
+def test_consecutive_creates_assign_sequential_ids(main_window) -> None:
+    main_window._on_create("Client", _client_payload(name="Alice"))
+    main_window._on_create("Client", _client_payload(name="Bob"))
+    main_window._on_create("Client", _client_payload(name="Carol"))
+
+    ids = [r["ID"] for r in main_window._records]
+    assert ids == [1, 2, 3]
+
+
+def test_auto_id_is_per_record_type(main_window) -> None:
+    # Client and Airline number independently — first of each gets ID 1.
+    main_window._on_create("Client", _client_payload())
+    main_window._on_create("Airline", {"Company Name": "Acme"})
+
+    client = next(r for r in main_window._records if r["Type"] == "Client")
+    airline = next(r for r in main_window._records if r["Type"] == "Airline")
+    assert client["ID"] == 1
+    assert airline["ID"] == 1
 
 
 # ---------------------------------------------------------------------------
@@ -81,7 +103,7 @@ def test_save_failure_rolls_back_in_memory_append(
 
     # The orchestrator must NOT propagate the OSError — it catches it,
     # rolls back, and reports through the status bar.
-    main_window._on_create("Client", _client_payload(id_value="42"))
+    main_window._on_create("Client", _client_payload())
 
     assert len(main_window._records) == before, (
         "Save failure must roll back the in-memory append so _records "
@@ -91,6 +113,30 @@ def test_save_failure_rolls_back_in_memory_append(
 
 def test_validation_failure_does_not_touch_records(main_window) -> None:
     before = len(main_window._records)
-    # Empty ID — should be rejected before append, no rollback needed.
-    main_window._on_create("Client", _client_payload(id_value=""))
+    # Empty Name — required field check rejects before append, no rollback.
+    # ID can no longer be the trigger here: it is auto-assigned by the
+    # orchestrator before validation runs.
+    main_window._on_create("Client", _client_payload(name=""))
     assert len(main_window._records) == before
+
+
+# ---------------------------------------------------------------------------
+# Malformed existing ID — a legacy or hand-edited JSONL row with a
+# non-numeric ID must not crash the create button. next_id raises
+# RecordValidationError, the orchestrator catches it, the status bar
+# reports the problem, and _records is untouched.
+# ---------------------------------------------------------------------------
+
+
+def test_create_with_malformed_existing_id_reports_and_does_not_crash(
+    main_window,
+) -> None:
+    # Inject a legacy-style row directly so we exercise the next_id error
+    # path without depending on the public create API.
+    main_window._records.append({"Type": "Client", "ID": "abc"})
+    before = list(main_window._records)
+
+    main_window._on_create("Client", _client_payload(name="Alice"))
+
+    assert main_window._records == before
+    assert "non-numeric ID" in main_window.status._status_lbl.text()

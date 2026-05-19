@@ -1,6 +1,6 @@
 import pytest
 
-from record.service import create_record
+from record.service import create_record, next_id
 from record.validator import RecordValidationError
 
 
@@ -187,3 +187,76 @@ def test_all_failure_modes_raise_record_validation_error(
 ) -> None:
     with pytest.raises(RecordValidationError):
         create_record(record_type, payload)
+
+
+# ---------------------------------------------------------------------------
+# next_id — auto-ID generation for Client and Airline.
+#
+# Happy paths: first record of a type gets 1, subsequent records get
+# max-plus-one (gaps preserved on purpose so foreign IDs in Flight rows
+# stay stable across deletes).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "records,record_type,expected",
+    [
+        pytest.param([], "Client", 1, id="empty-store-first-id-is-1"),
+        pytest.param(
+            [{"Type": "Airline", "ID": 9}],
+            "Client",
+            1,
+            id="other-type-only-still-1",
+        ),
+        pytest.param(
+            [{"Type": "Client", "ID": 1}, {"Type": "Client", "ID": 2}],
+            "Client",
+            3,
+            id="contiguous-ids-next-is-max-plus-one",
+        ),
+        pytest.param(
+            [{"Type": "Client", "ID": 1}, {"Type": "Client", "ID": 5}],
+            "Client",
+            6,
+            id="gap-preserved-next-is-max-plus-one",
+        ),
+    ],
+)
+def test_next_id_happy_paths(
+    records: list[dict], record_type: str, expected: int
+) -> None:
+    assert next_id(records, record_type) == expected
+
+
+# ---------------------------------------------------------------------------
+# next_id — malformed existing IDs must raise RecordValidationError so the
+# GUI orchestrator can surface a status-bar message instead of crashing.
+# Triggered by legacy JSONL or hand-edited rows.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "bad_id",
+    [
+        pytest.param("abc", id="non-numeric-string"),
+        pytest.param("1.5", id="float-string"),
+        pytest.param(None, id="explicit-none"),
+        pytest.param("", id="empty-string"),
+    ],
+)
+def test_next_id_raises_validation_error_on_malformed_existing_id(bad_id) -> None:
+    records = [{"Type": "Client", "ID": bad_id}]
+
+    with pytest.raises(RecordValidationError, match="non-numeric ID"):
+        next_id(records, "Client")
+
+
+def test_next_id_ignores_malformed_id_on_other_record_type() -> None:
+    # The bad ID is on an Airline row — asking for the next Client ID must
+    # still succeed because next_id filters by Type first.
+    records = [
+        {"Type": "Airline", "ID": "abc"},
+        {"Type": "Client", "ID": 1},
+    ]
+
+    assert next_id(records, "Client") == 2
