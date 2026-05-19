@@ -103,7 +103,7 @@ class MainWindow(QMainWindow):
             delete=DeleteRecord(save=save, confirm=ask),
             clear_all=ClearAllRecords(save=save, confirm=ask),
         )
-    
+
 # -------------------------- UI Construction --------------------------
 
     def _compose_central(self) -> QWidget:
@@ -220,10 +220,8 @@ class MainWindow(QMainWindow):
         self._tabs_by_type[record_type].view.record_list.search_input.clear()
         self._refresh_record_type(record_type)
         self.status.set_status(f"Show all {record_type}.")
-    
     def _reset_page(self, record_type: str) -> None:
         self._page_by_type[record_type] = 1
-       
 
     def _step_page(self, record_type: str, delta: int) -> None:
         self._page_by_type[record_type] += delta
@@ -233,7 +231,7 @@ class MainWindow(QMainWindow):
     def _refresh_all_tables(self) -> None:
         for tab in self._tabs:
             self._refresh_tab(tab)
-    
+
     def _refresh_record_type(self, record_type: str) -> None:
         self._refresh_tab(self._tabs_by_type[record_type])
 
