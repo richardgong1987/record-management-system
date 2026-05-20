@@ -1,20 +1,3 @@
-{"Type": "Client", "ID": 1, "Name": "name1", "Address Line 1": "tokyo", "Address Line 2": "", "Address Line 3": "", "City": "tokyo", "State": "japan", "Zip Code": "122", "Country": "USA", "Phone Number": "202033"}
-{"Type": "Client", "ID": 2, "Name": "name1", "Address Line 1": "tokyo", "Address Line 2": "", "Address Line 3": "", "City": "tokyo", "State": "japan", "Zip Code": "122", "Country": "UK", "Phone Number": "202033"}
-{"Type": "Client", "ID": 3, "Name": "name1", "Address Line 1": "tokyo", "Address Line 2": "", "Address Line 3": "", "City": "tokyo", "State": "japan", "Zip Code": "122", "Country": "USA", "Phone Number": "202033"}
-{"Type": "Client", "ID": 4, "Name": "name1", "Address Line 1": "tokyo", "Address Line 2": "", "Address Line 3": "", "City": "tokyo", "State": "japan", "Zip Code": "122", "Country": "USA", "Phone Number": "202033"}
-{"Type": "Client", "ID": 5, "Name": "name1", "Address Line 1": "tokyo", "Address Line 2": "", "Address Line 3": "", "City": "tokyo", "State": "japan", "Zip Code": "122", "Country": "USA", "Phone Number": "202033"}
-{"Type": "Client", "ID": 6, "Name": "name1", "Address Line 1": "tokyo", "Address Line 2": "", "Address Line 3": "", "City": "tokyo", "State": "japan", "Zip Code": "122", "Country": "USA", "Phone Number": "202033"}
-{"Type": "Client", "ID": 7, "Name": "name1", "Address Line 1": "tokyo", "Address Line 2": "", "Address Line 3": "", "City": "tokyo", "State": "japan", "Zip Code": "122", "Country": "USA", "Phone Number": "202033"}
-{"Type": "Client", "ID": 8, "Name": "name1", "Address Line 1": "tokyo", "Address Line 2": "", "Address Line 3": "", "City": "tokyo", "State": "japan", "Zip Code": "122", "Country": "USA", "Phone Number": "202033"}
-{"Type": "Client", "ID": 9, "Name": "name1", "Address Line 1": "tokyo", "Address Line 2": "", "Address Line 3": "", "City": "tokyo", "State": "japan", "Zip Code": "122", "Country": "USA", "Phone Number": "202033"}
-{"Type": "Client", "ID": 10, "Name": "name1", "Address Line 1": "tokyo", "Address Line 2": "", "Address Line 3": "", "City": "tokyo", "State": "japan", "Zip Code": "122", "Country": "USA", "Phone Number": "202033"}
-{"Type": "Airline", "ID": 1, "Company Name": "google"}
-{"Type": "Airline", "ID": 2, "Company Name": "google3"}
-{"Type": "Airline", "ID": 3, "Company Name": "google5"}
-{"Type": "Airline", "ID": 4, "Company Name": "google"}
-{"Type": "Airline", "ID": 5, "Company Name": "google"}
-{"Type": "Airline", "ID": 6, "Company Name": "google"}
-{"Type": "Airline", "ID": 7, "Company Name": "google2"}
-{"Type": "Airline", "ID": 8, "Company Name": "google2"}
-{"Type": "Airline", "ID": 9, "Company Name": "google2"}
-{"Type": "Airline", "ID": 10, "Company Name": "1"}
+{"Type": "Airline", "ID": 1, "Company Name": "USA AirLine"}
+{"Type": "Client", "ID": 1, "Name": "Hanjin gong", "Address Line 1": "USA", "Address Line 2": "", "Address Line 3": "", "City": "New York", "State": "", "Zip Code": "", "Country": "USA", "Phone Number": "080-7006-5555"}
+{"Type": "Flight", "Client_ID": 1, "Airline_ID": 1, "Date": "2026-06-20", "Start City": "Tokyo", "End City": "New York"}

@@ -19,6 +19,7 @@ COLOR_HEADER_BG = "#eaeef2"
 COLOR_ROW_ALT = "#f6f8fa"
 COLOR_SELECTION = "#dbeafe"
 
+
 @dataclass(frozen=True)
 class Spacing:
     """Layout-spacing tokens shared by QSS and Qt layout calls.
