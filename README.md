@@ -75,9 +75,6 @@ This README is an index. The documents below live under [docs/](docs/).
 - [Clear all records](docs/design/clear-all-records.md) — design and tour for the Clear button: per-tab bulk delete of every record of the active type, with confirmation.
 - [Integration tests](docs/design/integration-tests.md) — design for the cross-module workflow tests under `tests/integration/`: what they cover, where they sit next to the unit suite, and how the save-failure rollback is verified through `MainWindow`.
 - [Packaging & release](docs/design/packaging-and-release.md) — how the matrix CI build produces `.app` / `.exe` / Linux bundles and uploads them to GitHub Releases.
-- _Planned:_ Search & display records
-- _Planned:_ Architecture overview
-- _Planned:_ Directory structure explainer
 
 ### Report
 

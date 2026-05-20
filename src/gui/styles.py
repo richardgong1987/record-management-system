@@ -5,6 +5,19 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QApplication
 
+# Palette — single source of truth so future tweaks happen in one place.
+COLOR_BG = "#f5f7fa"
+COLOR_PANEL = "#ffffff"
+COLOR_BORDER = "#d0d7de"
+COLOR_TEXT = "#1f2328"
+COLOR_MUTED = "#656d76"
+COLOR_PRIMARY = "#1f6feb"
+COLOR_PRIMARY_HOVER = "#1a5fd1"
+COLOR_DANGER = "#cf222e"
+COLOR_DANGER_HOVER = "#b21726"
+COLOR_HEADER_BG = "#eaeef2"
+COLOR_ROW_ALT = "#f6f8fa"
+COLOR_SELECTION = "#dbeafe"
 
 @dataclass(frozen=True)
 class Spacing:
@@ -74,6 +87,7 @@ QTabWidget::pane {{
 QTabWidget::tab-bar {{
     left: 10px;
 }}
+
 QTabBar::tab {{
     background: #ECEEF1;
     color: #52606D;
@@ -170,6 +184,7 @@ QPushButton:disabled {{
     background: #F4F5F7;
     border-color: #E2E5EA;
 }}
+
 QPushButton#primary {{
     background: #3D8BFD;
     color: #FFFFFF;
@@ -179,9 +194,31 @@ QPushButton#primary:hover {{
     background: #2F7AE5;
     border-color: #265FB8;
 }}
+
 QPushButton#primary:pressed {{
     background: #2768C7;
 }}
+
+QPushButton#destructive {{
+    background-color: {COLOR_PANEL};
+    color: {COLOR_DANGER};
+    border: 1px solid {COLOR_DANGER};
+}}
+QPushButton#destructive:hover {{
+    background-color: {COLOR_DANGER};
+    color: white;
+}}
+
+QPushButton#danger {{
+    background-color: #ea4f4f;
+    color: white;
+    border: 1px solid {COLOR_DANGER};
+}}
+QPushButton#danger:hover {{
+    background-color: {COLOR_DANGER};
+    color: white;
+}}
+
 
 QHeaderView::section {{
     background: #E6EEF7;

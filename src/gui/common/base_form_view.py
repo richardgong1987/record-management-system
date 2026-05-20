@@ -68,6 +68,7 @@ class BaseFormView(QWidget):
         self.delete_btn = QPushButton("Delete")
         self.delete_btn.setObjectName("destructive")
         self.clear_btn = QPushButton("Clear")
+        self.clear_btn.setObjectName("danger")
 
         row = QHBoxLayout()
         row.setSpacing(SPACING.button_spacing)
