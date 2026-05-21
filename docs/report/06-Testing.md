@@ -6,4 +6,4 @@ Unit tests cover GUI behaviour, record validation, repository operations, search
 
 Integration tests verify record workflows, save-failure consistency, and search pagination across connected modules.
 
-The end-to-end testing file was included to support future application-level workflow testing under more complete operational use cases.
+The end-to-end structure supports future workflow testing.

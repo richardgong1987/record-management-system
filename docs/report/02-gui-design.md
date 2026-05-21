@@ -2,7 +2,7 @@
 
 Before development began, the team considered three interface designs for the Record Management System.
 
-Option 1 used a single-window layout with a record-type dropdown, form panel, records table, colour-coded buttons, and status bar. Although compact, combining all record types within one shared workspace risked reducing clarity and making navigation confusing.
+Option 1 used a single-window layout with a record-type dropdown, form panel, records table, colour-coded buttons, and status bar. Combining all record types within one shared workspace risked reducing clarity and making navigation confusing.
 
 Option 2 proposed a dashboard-style interface with a dark sidebar, navigation trail, status badges, city filters, and export functionality. However, this design exceeded the intended scope of a desktop Python application.
 
