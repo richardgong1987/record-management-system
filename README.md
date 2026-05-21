@@ -78,6 +78,46 @@ This README is an index. The documents below live under [docs/](docs/).
 
 ### System Architecture Diagram
 ![](./docs/achitecture.png)
+
+# Demonstration Showcase
+## 1.Capture the main GUI screenshot.
+
+<img width="1465" height="814" alt="Image" src="https://github.com/user-attachments/assets/3fac6c9d-41d6-446f-aec0-746ac62051da" />
+
+<img width="1466" height="816" alt="Image" src="https://github.com/user-attachments/assets/2c6a4d16-df62-426a-a210-b33a4f2a1163" />
+
+<img width="1465" height="816" alt="Image" src="https://github.com/user-attachments/assets/8c99b60a-c899-47fc-920d-3e4e8ab917b3" />
+
+## 2.Capture create-record flow screenshot
+
+<img width="1472" height="818" alt="Image" src="https://github.com/user-attachments/assets/36d2e1b1-fd1e-4382-a139-dd89b022345c" />
+
+## 3.Capture search-result screenshot.
+<img width="1475" height="824" alt="Image" src="https://github.com/user-attachments/assets/f3d20034-915c-44dc-81c2-91144f126e99" />
+
+## 4.Capture update-record flow screenshot.
+
+<img width="1470" height="814" alt="Image" src="https://github.com/user-attachments/assets/a36de6bb-0fbc-4b53-8158-20a0fefe60d7" />
+
+## 5.Capture delete-confirmation screenshot.
+
+<img width="1475" height="815" alt="Image" src="https://github.com/user-attachments/assets/9351e5eb-f5e6-4acf-a100-18f79a6a2ef0" />
+
+## 6.Capture test-result screenshot
+### 6.1 unit test:
+
+<img width="1613" height="413" alt="Image" src="https://github.com/user-attachments/assets/0963dea5-aefb-419b-b7e2-3b812511fc64" />
+
+### 6.1 integration tests:
+
+<img width="1599" height="263" alt="Image" src="https://github.com/user-attachments/assets/3740eb38-2e9b-46b8-ad6d-d5ec3c8f8f05" />
+
+
+## 7. Store screenshots
+
+<img width="1607" height="707" alt="Image" src="https://github.com/user-attachments/assets/4a22a513-83fd-447e-b06c-deaa0695c14e" />
+
+
 ### Report
 
 - _Planned:_ 1000-word report and supporting materials.
