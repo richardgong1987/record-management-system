@@ -76,6 +76,8 @@ This README is an index. The documents below live under [docs/](docs/).
 - [Integration tests](docs/design/integration-tests.md) — design for the cross-module workflow tests under `tests/integration/`: what they cover, where they sit next to the unit suite, and how the save-failure rollback is verified through `MainWindow`.
 - [Packaging & release](docs/design/packaging-and-release.md) — how the matrix CI build produces `.app` / `.exe` / Linux bundles and uploads them to GitHub Releases.
 
+### System Architecture Diagram
+![](./docs/achitecture.png)
 ### Report
 
 - _Planned:_ 1000-word report and supporting materials.
