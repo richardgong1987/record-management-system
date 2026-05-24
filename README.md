@@ -80,42 +80,37 @@ This README is an index. The documents below live under [docs/](docs/).
 ![](./docs/achitecture.png)
 
 # Demonstration Showcase
-## 1.Capture the main GUI screenshot.
 
-<img width="1465" height="814" alt="Image" src="https://github.com/user-attachments/assets/3fac6c9d-41d6-446f-aec0-746ac62051da" />
+## Client Records Interface
+![Client Records](./docs/report/101-Client-Records.png)
 
-<img width="1466" height="816" alt="Image" src="https://github.com/user-attachments/assets/2c6a4d16-df62-426a-a210-b33a4f2a1163" />
+## Airline Records Interface
+![Airline Records](./docs/report/102-Airline-Records.png)
 
-<img width="1465" height="816" alt="Image" src="https://github.com/user-attachments/assets/8c99b60a-c899-47fc-920d-3e4e8ab917b3" />
+## Flight Records Interface
+![Flight Records](./docs/report/103-Flight-Records.png)
 
-## 2.Capture create-record flow screenshot
+## Create Record Workflow
+![Create Record Flow](./docs/report/104-Create-Record-Flow.png)
 
-<img width="1472" height="818" alt="Image" src="https://github.com/user-attachments/assets/36d2e1b1-fd1e-4382-a139-dd89b022345c" />
+## Search Results
+![Search Results](./docs/report/105-Search-Results.png)
 
-## 3.Capture search-result screenshot.
-<img width="1475" height="824" alt="Image" src="https://github.com/user-attachments/assets/f3d20034-915c-44dc-81c2-91144f126e99" />
+## Update Record Workflow
+![Update Record Flow](./docs/report/106-Update-Record-Flow.png)
 
-## 4.Capture update-record flow screenshot.
+## Delete Confirmation
+![Delete Confirmation](./docs/report/107-Delete-confirmation.png)
 
-<img width="1470" height="814" alt="Image" src="https://github.com/user-attachments/assets/a36de6bb-0fbc-4b53-8158-20a0fefe60d7" />
+## Unit Testing
+![Unit Test](./docs/report/108-Unittest.png)
 
-## 5.Capture delete-confirmation screenshot.
+## Integration Testing
+![Integration Test](./docs/report/109-Integration-test.png)
 
-<img width="1475" height="815" alt="Image" src="https://github.com/user-attachments/assets/9351e5eb-f5e6-4acf-a100-18f79a6a2ef0" />
+## Data Storage Example
+![Store](./docs/report/110-Store.png)
 
-## 6.Capture test-result screenshot
-### 6.1 unit test:
-
-<img width="1613" height="413" alt="Image" src="https://github.com/user-attachments/assets/0963dea5-aefb-419b-b7e2-3b812511fc64" />
-
-### 6.1 integration tests:
-
-<img width="1599" height="263" alt="Image" src="https://github.com/user-attachments/assets/3740eb38-2e9b-46b8-ad6d-d5ec3c8f8f05" />
-
-
-## 7. Store screenshots
-
-<img width="1607" height="707" alt="Image" src="https://github.com/user-attachments/assets/4a22a513-83fd-447e-b06c-deaa0695c14e" />
 
 
 ### Report
