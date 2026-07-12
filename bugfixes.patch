@@ -1,0 +1,152 @@
+diff --git a/src/gui/main_window.py b/src/gui/main_window.py
+index 2f01d53..aa02b45 100644
+--- a/src/gui/main_window.py
++++ b/src/gui/main_window.py
+@@ -1,5 +1,6 @@
+ from dataclasses import dataclass
+ 
++import jsonlines
+ from PySide6.QtWidgets import (
+     QMainWindow,
+     QTabWidget,
+@@ -60,7 +61,7 @@ class MainWindow(QMainWindow):
+         apply_responsive_size(self, _WINDOW)
+ 
+         # Step 1: View state
+-        self._records = load_records(DATA_FILE_PATH)
++        self._records, load_error = self._load_records_safely()
+         self._page_by_type: dict[str, int] = {rt: 1 for rt in RECORD_TYPES}
+         # Latched on Search click, not on keystroke; empty disables the filter.
+         self._query_by_type: dict[str, str] = {rt: "" for rt in RECORD_TYPES}
+@@ -87,6 +88,28 @@ class MainWindow(QMainWindow):
+             self._connect_tab_signals(tab.controller)
+ 
+         self._refresh_all_tables()
++        if load_error:
++            self.status.set_status(load_error)
++
++    @staticmethod
++    def _load_records_safely() -> tuple[list[dict], str | None]:
++        # A single malformed line (hand edit, interrupted write from an
++        # older version, disk/sync-tool corruption) must not make the
++        # whole application unlaunchable. Degrade to an empty in-memory
++        # list and surface a clear, actionable status-bar warning instead
++        # of letting the exception propagate out of __init__.
++        try:
++            return load_records(DATA_FILE_PATH), None
++        except jsonlines.InvalidLineError as exc:
++            return [], (
++                f"Could not read {DATA_FILE_PATH.name} ({exc}) — starting "
++                "with an empty list. Fix or back up the file, then restart."
++            )
++        except OSError as exc:
++            return [], (
++                f"Could not read {DATA_FILE_PATH.name} ({exc}) — starting "
++                "with an empty list."
++            )
+ 
+     def _build_use_cases(self) -> _UseCases:
+         # Ports are closures over module-level ``save_records`` / ``confirm``
+@@ -146,8 +169,20 @@ class MainWindow(QMainWindow):
+         )
+ 
+     def _on_delete(self, record_type: str, payload: dict) -> None:
++        # Pass the search-filtered rows currently on screen so the use case
++        # reselects "the same visible row" against what the user is actually
++        # looking at, not every record of this type — otherwise a delete
++        # made while a search filter is active can silently reselect (and
++        # on a follow-up Delete click, remove) a record that was never
++        # visible under the active filter.
++        visible_rows = search_records(
++            self._records, record_type, self._query_by_type[record_type]
++        )
+         self._apply(
+-            record_type, self._uc.delete(record_type, payload, self._state(record_type))
++            record_type,
++            self._uc.delete(
++                record_type, payload, self._state(record_type), visible_rows
++            ),
+         )
+ 
+     def _on_clear_all(self, record_type: str) -> None:
+diff --git a/src/record/use_cases/delete.py b/src/record/use_cases/delete.py
+index 7332b41..b173286 100644
+--- a/src/record/use_cases/delete.py
++++ b/src/record/use_cases/delete.py
+@@ -10,15 +10,30 @@ class DeleteRecord:
+     save: Save
+     confirm: Confirm
+ 
+-    def __call__(self, record_type: str, _payload: dict, state: State) -> Result:
++    def __call__(
++        self,
++        record_type: str,
++        _payload: dict,
++        state: State,
++        visible_rows: list[dict] | None = None,
++    ) -> Result:
+         # Flow:
+         # 1. Guard against missing / stale selection
+         # 2. Ask the user to confirm
+         # 3. Capture the table-row position by identity (duplicate Flights
+-        #    must stay distinguishable) BEFORE filtering the list
++        #    must stay distinguishable) BEFORE filtering the list. Position
++        #    is captured against `visible_rows` — the rows the caller is
++        #    actually showing on screen right now (already search-filtered)
++        #    — not every record of this type, so a delete made while a
++        #    search filter is active reselects the row that is visually
++        #    next, instead of an arbitrary record outside the current
++        #    filter. Callers that don't track a filtered view (e.g. tests
++        #    driving the use case directly) can omit it and fall back to
++        #    every record of this type, matching the old behaviour.
+         # 4. Build new_records without the deleted dict, persist
+-        # 5. Compute the next selection — the survivor at the same position,
+-        #    clamped to the new end of the list, or None if the tab emptied
++        # 5. Compute the next selection — the survivor at the same position
++        #    within the SAME reference view used in step 3, clamped to the
++        #    new end of the list, or None if the view emptied
+         # Step 1: Selection guard
+         record = state.selected
+         if record is None:
+@@ -29,9 +44,14 @@ class DeleteRecord:
+         if not self.confirm("Confirm delete", body):
+             return Cancelled("Delete cancelled.")
+ 
+-        # Step 3: Capture position by identity
+-        type_records = [r for r in state.records if r["Type"] == record_type]
+-        position = next(i for i, r in enumerate(type_records) if r is record)
++        # Step 3: Capture position by identity, against the visible/filtered
++        # rows when the caller supplied them.
++        reference_rows = (
++            visible_rows
++            if visible_rows is not None
++            else [r for r in state.records if r["Type"] == record_type]
++        )
++        position = next(i for i, r in enumerate(reference_rows) if r is record)
+ 
+         # Step 4: Filter + persist
+         new_records = [r for r in state.records if r is not record]
+@@ -40,8 +60,10 @@ class DeleteRecord:
+         except OSError as exc:
+             return Err(f"Save failed: {exc}")
+ 
+-        # Step 5: Compute reselection + repaint the form to match
+-        new_selection = self._next_selection(new_records, record_type, position)
++        # Step 5: Compute reselection (within the same reference view used
++        # for `position`) + repaint the form to match
++        new_visible = [r for r in reference_rows if r is not record]
++        new_selection = self._next_selection(new_visible, position)
+         return Ok(
+             new_records,
+             new_selection,
+@@ -51,9 +73,8 @@ class DeleteRecord:
+ 
+     @staticmethod
+     def _next_selection(
+-        records: list[dict], record_type: str, deleted_position: int
++        survivors: list[dict], deleted_position: int
+     ) -> dict | None:
+-        survivors = [r for r in records if r["Type"] == record_type]
+         if not survivors:
+             return None
+         return survivors[min(deleted_position, len(survivors) - 1)]
